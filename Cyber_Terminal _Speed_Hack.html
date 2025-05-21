@@ -1,0 +1,2649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Terminal // Speed Hack</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            /* Hacker Game Original Colors */
+            --terminal-bg: #0a0a12;
+            --terminal-blue: #00cfff; /* Primary Neon Blue - Original Hacker Greenish/Blue */
+            --terminal-cyan: #0ff;    /* Secondary Cyan - Original Hacker Cyan */
+            --terminal-purple: #b19cd9; /* Tertiary Purple */
+            --terminal-red: #f44;    /* Error Red / Standard AI Red */
+            --terminal-green: #27c93f; /* Success Green */
+            --terminal-yellow: #ffbd2e; /* Warning Yellow */
+
+            --terminal-glow: rgba(0, 191, 255, 0.7); /* Original Glow (Blueish) */
+            --terminal-border: #333;
+            --text-color: #e0e0e0;   /* Default Text Color (Light Grey) */
+            --text-shadow: 0 0 8px var(--terminal-glow);
+
+            /* AI Takeover Added/Modified Colors */
+            --terminal-dark-red: #cc0000; /* Darker red for AI matrix, etc. */
+            --terminal-light-red: #ff6666; /* Lighter red / pink for AI's "cyan" equivalent */
+            --terminal-orange-red: #FF4500; /* For specific AI messages */
+            --terminal-crimson: #DC143C; /* For specific AI messages */
+            --terminal-tomato: #FF6347; /* For specific AI messages */
+            --ai-yellow: #ffc400; /* AI's specific yellow */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: 'Inconsolata', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            perspective: 1000px;
+        }
+
+        .matrix-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1; /* Hacker game default, AI will change this */
+            transition: opacity 1s ease-in-out;
+        }
+
+        .terminal-container {
+            position: relative;
+            width: 85%;
+            max-width: 900px;
+            height: 80vh;
+            background: var(--terminal-bg);
+            border-radius: 8px;
+            box-shadow: 0 0 40px var(--terminal-glow), /* Default blue glow */
+                        inset 0 0 15px rgba(0, 191, 255, 0.3); /* Default blue inset */
+            overflow: hidden;
+            border: 1px solid var(--terminal-blue); /* Default blue border */
+            transform-style: preserve-3d;
+            animation: float 8s ease-in-out infinite;
+            padding-bottom: 15px; /* Space for the command line if content fills up */
+            transition: border-color 0.5s, box-shadow 0.5s; /* For AI smooth color change */
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotateX(8deg) rotateY(4deg);
+            }
+            50% {
+                transform: translateY(-15px) rotateX(4deg) rotateY(8deg);
+            }
+        }
+
+        /* AI Takeover Shake Animation */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-0.5deg); }
+            20% { transform: translate(-3px, 0px) rotate(0.5deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(0.5deg); }
+            50% { transform: translate(-1px, 2px) rotate(-0.5deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-0.5deg); }
+            80% { transform: translate(-1px, -1px) rotate(0.5deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-0.5deg); }
+        }
+
+        .ai-takeover-shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite;
+        }
+
+
+        .terminal-header {
+            background: linear-gradient(to right, #0a0a0a, #111);
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--terminal-blue); /* Default blue */
+            font-family: 'Share Tech Mono', monospace;
+            border-bottom: 1px solid var(--terminal-blue); /* Default blue */
+            box-shadow: 0 2px 20px var(--terminal-glow); /* Default blue glow */
+            user-select: none;
+            transition: color 0.5s, border-color 0.5s, box-shadow 0.5s; /* For AI */
+            position: relative; /* Needed for absolute positioning of timer */
+        }
+
+        .terminal-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .terminal-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+        }
+
+        .terminal-button.red { background: #ff5f56; }
+        .terminal-button.yellow { background: #ffbd2e; }
+        .terminal-button.green { background: #27c93f; }
+
+        .terminal-title {
+            font-size: 0.9em;
+            text-transform: none; /* Keeps mixed case */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* Removed flex-grow: 1 to allow space for timer */
+            margin: 0 auto; /* Center the title */
+        }
+
+        #timer-display {
+            position: static; /* Change from absolute to static */
+            margin-left: auto; /* Push to the right */
+            color: var(--terminal-yellow);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9em;
+            z-index: 10;
+            /* Timer color classes */
+            &.timer-yellow { color: var(--terminal-yellow); text-shadow: 0 0 8px var(--terminal-yellow); }
+            &.timer-red { color: var(--terminal-red); text-shadow: 0 0 10px var(--terminal-red); }
+        }
+
+        .terminal-body {
+            padding: 15px;
+            height: calc(100% - 40px - 15px); /* Adjusted for padding-bottom on container */
+            overflow-y: auto;
+            color: var(--text-color);
+            text-shadow: var(--text-shadow);
+            line-height: 1.6;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            font-size: 1.0rem;
+        }
+
+        .terminal-body::-webkit-scrollbar {
+            display: none;
+        }
+
+        .typing-area, .typing-text {
+            white-space: pre-wrap;
+            font-size: 1rem;
+            margin-bottom: 10px;
+             color: var(--text-color);
+        }
+        #ai-master-output { /* This will be the container for AI's text */
+             font-size: 1.05rem; /* AI's preference */
+             margin-bottom: 10px;
+        }
+
+
+        .command-line {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px 5px 15px; /* Ensure it's within main padding */
+            position: absolute; /* Position at bottom of terminal-container */
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--terminal-bg); /* Match terminal background */
+        }
+
+        .prompt {
+            color: var(--terminal-blue);
+            margin-right: 10px;
+            font-weight: bold;
+            user-select: none;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background: var(--terminal-blue);
+            animation: blink 1s infinite step-end;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .command-input {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            color: var(--terminal-blue);
+            font-family: 'Inconsolata', monospace;
+            font-size: 1rem;
+            outline: none;
+            caret-color: var(--terminal-blue);
+            text-shadow: var(--text-shadow);
+        }
+
+        .terminal-header .glitch {
+             position: relative;
+             animation: glitch-title-hacker 5s infinite linear alternate-reverse;
+        }
+         @keyframes glitch-title-hacker {
+            0% { transform: translate(0, 0); text-shadow: 0 0 var(--terminal-glow); }
+            10% { transform: translate(-1px, 1px); text-shadow: -1px 1px var(--terminal-red), 1px -1px var(--terminal-cyan); }
+            20% { transform: translate(1px, -1px); text-shadow: 1px -1px var(--terminal-red), -1px 1px var(--terminal-cyan); }
+            30% { transform: translate(-1px, 1px); text-shadow: -1px 1px var(--terminal-red), 1px -1px var(--terminal-cyan); }
+            40% { transform: translate(1px, -1px); text-shadow: 1px -1px var(--terminal-red), -1px 1px var(--terminal-cyan); }
+            50% { transform: translate(0, 0); text-shadow: 0 0 var(--terminal-glow); }
+            100% { transform: translate(0, 0); text-shadow: 0 0 var(--terminal-glow); }
+        }
+
+        .glitch.ai-active::before, .glitch.ai-active::after {
+            content: attr(data-text); position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; background: var(--terminal-bg);
+            overflow: hidden;
+        }
+        .glitch.ai-active::before {
+            left: 2px; text-shadow: -2px 0 var(--terminal-red);
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-1 2s infinite linear alternate-reverse;
+        }
+        .glitch.ai-active::after {
+            left: -2px; text-shadow: -2px 0 var(--terminal-light-red);
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim-2 2s infinite linear alternate-reverse;
+        }
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(54px, 800px, 54px, 0); } 20% { clip: rect(27px, 800px, 86px, 0); }
+            40% { clip: rect(14px, 800px, 75px, 0); } 60% { clip: rect(39px, 800px, 104px, 0); }
+            80% { clip: rect(18px, 800px, 53px, 0); } 100% { clip: rect(73px, 800px, 112px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(35px, 800px, 89px, 0); } 20% { clip: rect(56px, 800px, 103px, 0); }
+            40% { clip: rect(22px, 800px, 64px, 0); } 60% { clip: rect(88px, 800px, 120px, 0); }
+            80% { clip: rect(13px, 800px, 32px, 0); } 100% { clip: rect(42px, 800px, 99px, 0); }
+        }
+
+
+        .ascii-art {
+            color: var(--terminal-purple);
+            line-height: 1.1;
+            margin: 10px 0;
+            white-space: pre;
+            font-size: 0.8rem;
+            letter-spacing: 0px;
+            user-select: none;
+        }
+
+        .highlight { color: var(--terminal-cyan); }
+        .color-blue { color: var(--terminal-blue); }
+        .color-red { color: var(--terminal-red); }
+        .color-green { color: var(--terminal-green); }
+        .color-yellow { color: var(--terminal-yellow); }
+        .color-purple { color: var(--terminal-purple); }
+
+        .skill-bar { margin: 8px 0; }
+        .skill-name {
+            display: inline-block;
+            width: 160px;
+            color: var(--terminal-blue);
+        }
+        .skill-level {
+            display: inline-block;
+            height: 15px;
+            background: linear-gradient(to right, var(--terminal-blue), var(--terminal-cyan));
+            box-shadow: 0 0 5px var(--terminal-glow);
+            animation: expand 1s ease-out forwards;
+            transform-origin: left;
+            min-width: 5px;
+        }
+        @keyframes expand {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
+
+        .contact-item { margin: 8px 0; }
+        .contact-item a {
+            color: var(--terminal-purple);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .contact-item a:hover {
+            color: var(--terminal-cyan);
+            text-shadow: 0 0 10px var(--terminal-cyan);
+        }
+
+        .hidden { display: none; }
+        canvas { display: block; }
+
+        .scan-progress {
+            display: inline-block;
+            height: 12px;
+            background-color: var(--terminal-blue);
+            width: 0;
+            box-shadow: 0 0 5px var(--terminal-glow);
+        }
+        .scan-progress-container {
+             display: flex;
+             align-items: center;
+             margin-top: 10px;
+             color: var(--text-color);
+        }
+         .scan-progress-container span {
+             margin-left: 10px;
+         }
+
+        .file-listing {
+             margin-top: 10px;
+             padding-left: 20px;
+             white-space: pre-wrap;
+             color: var(--text-color);
+        }
+        .file-listing .dir { color: var(--terminal-blue); font-weight: bold; }
+        .file-listing .file { color: var(--terminal-cyan); }
+        .file-listing .exec { color: var(--terminal-green); }
+        .file-listing .secret { color: var(--terminal-red); font-weight: bold; }
+        .planted-file { color: var(--terminal-yellow); }
+
+        .file-content {
+            margin-top: 15px;
+            padding: 15px;
+            border-left: 2px solid var(--terminal-purple);
+            background-color: rgba(0, 191, 255, 0.05);
+            white-space: pre-wrap;
+            color: var(--text-color);
+        }
+
+        .objective {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px dashed var(--terminal-purple);
+            color: var(--terminal-purple);
+            font-weight: bold;
+            text-align: center;
+            user-select: none;
+        }
+
+        .game-over-message {
+            margin-top: 30px;
+            font-size: 1.5em;
+            text-align: center;
+            color: var(--terminal-red);
+            font-weight: bold;
+            text-shadow: 0 0 15px var(--terminal-red);
+            animation: pulse 2s infinite;
+        }
+         .win-message {
+            margin-top: 30px;
+            font-size: 1.5em;
+            text-align: center;
+            color: var(--terminal-green);
+            font-weight: bold;
+            text-shadow: 0 0 15px var(--terminal-green);
+            animation: pulse 2s infinite;
+         }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        .trace-warning {
+             color: var(--terminal-red);
+             font-weight: bold;
+             animation: flash 1s step-end infinite;
+        }
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Removed the old #timer-display absolute positioning */
+
+        .terminal-info {
+            display: flex;
+            align-items: center;
+            gap: 15px; /* Add some space between trace and timer */
+            margin-left: auto; /* Push this div to the right */
+        }
+
+        /* Video Overlay Styles */
+        .video-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+        }
+
+        .video-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .video-overlay video {
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="start-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: var(--terminal-blue); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; font-family: 'Share Tech Mono', monospace; font-size: 1.5em; text-shadow: 0 0 10px var(--terminal-glow);">
+        <p>CYBER TERMINAL // SPEED HACK</p>
+        <button id="start-button" style="margin-top: 20px; padding: 10px 20px; background: var(--terminal-blue); color: var(--terminal-bg); border: none; border-radius: 5px; font-size: 1em; cursor: pointer; box-shadow: 0 0 10px var(--terminal-glow); transition: background 0.3s, box-shadow 0.3s;">
+            START HACKING
+        </button>
+    </div>
+
+    <canvas id="matrix" class="matrix-background"></canvas>
+
+    <div id="video-overlay" class="video-overlay">
+        <video id="exploit-video" src="https://assets.motionarray.com/404.mp4" preload="auto"></video>
+        <video id="vatican-video" src="https://vlipsy.com/clips/creepy-face-jump-scare-3hEsFXt9" preload="auto" style="display: none;"></video>
+    </div>
+
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="terminal-buttons">
+                <div class="terminal-button red"></div>
+                <div class="terminal-button yellow"></div>
+                <div class="terminal-button green"></div>
+            </div>
+            <div class="terminal-title"><span class="glitch" data-text="CYBER TERMINAL // SPEED HACK //  dev=l0n3r">CYBER TERMINAL // SPEED HACK  //   dev=l0n3r</span></div>
+            <div class="terminal-info">
+                <span id="trace-display"></span>
+                <span id="timer-display"></span>
+            </div>
+        </div>
+        <div class="terminal-body" id="terminal-body">
+            <!-- Content will be dynamically generated.
+                 Initial structure for resetGame:
+                 <div id="initial-intro-area" class="typing-area"></div>
+            -->
+        </div>
+        <!-- Command line is now part of the JS-managed terminal-body content -->
+        <div id="command-line" class="command-line hidden">
+            <span id="current-prompt" class="prompt"></span>
+            <input type="text" class="command-input" id="command-input" autocomplete="off" spellcheck="false">
+            <span class="cursor"></span>
+        </div>
+    </div>
+
+    <script>
+        // --- Start Screen Logic ---
+        const startScreenEl = document.getElementById('start-screen');
+        const startButtonEl = document.getElementById('start-button');
+
+        startButtonEl.addEventListener('click', () => {
+            startScreenEl.style.display = 'none';
+            resetGame(); // Start the game
+        });
+
+
+        // --- MATRIX BACKGROUND EFFECT (Adapted from AI script for richness, with dynamic color) ---
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
+        const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const nums = '0123456789';
+        const symbols = '+-*/=%$#@&?.';
+        const binary = '01';
+        const matrixAlphabet = katakana + latin + nums + symbols + binary;
+
+        const matrixFontSize = 16;
+        let matrixColumns = canvas.width / matrixFontSize; // Recalculate on resize
+        const matrixRainDrops = [];
+        function initMatrixRaindrops() {
+            matrixRainDrops.length = 0; // Clear existing
+            matrixColumns = canvas.width / matrixFontSize;
+            for (let x = 0; x < matrixColumns; x++) matrixRainDrops[x] = 1 + Math.random() * canvas.height / matrixFontSize;
+        }
+        initMatrixRaindrops(); // Initial setup
+
+        let currentMatrixColor = '--terminal-blue';
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const resolvedMatrixColor = getComputedStyle(document.documentElement).getPropertyValue(currentMatrixColor).trim();
+            ctx.fillStyle = resolvedMatrixColor;
+            ctx.font = matrixFontSize + 'px monospace';
+
+            for (let i = 0; i < matrixRainDrops.length; i++) {
+                const text = matrixAlphabet.charAt(Math.floor(Math.random() * matrixAlphabet.length));
+                ctx.fillText(text, i * matrixFontSize, matrixRainDrops[i] * matrixFontSize);
+                if (matrixRainDrops[i] * matrixFontSize > canvas.height && Math.random() > 0.975) {
+                    matrixRainDrops[i] = 0;
+                }
+                matrixRainDrops[i]++;
+            }
+            requestAnimationFrame(drawMatrix);
+        }
+
+
+        // --- Audio Objects and Helper (Hacker Game Original) ---
+        const audioPlaceholders = {
+            typeKey: 'https://assets.mixkit.co/active_storage/sfx/2542/2542.wav',
+            commandEnter: 'https://assets.mixkit.co/active_storage/sfx/2859/2859.wav',
+            error: 'https://assets.mixkit.co/active_storage/sfx/954/954.wav',
+            success: 'https://assets.mixkit.co/active_storage/sfx/2859/2859.wav',
+            scanComplete: 'https://assets.mixkit.co/active_storage/sfx/2847/2847.wav',
+            exploitSuccess: 'https://assets.mixkit.co/active_storage/sfx/266/266.wav',
+            downloadComplete: 'https://assets.mixkit.co/active_storage/sfx/237/237.wav',
+            accessGranted: 'https://assets.mixkit.co/active_storage/sfx/2501/2501.wav',
+            traceDetected: 'https://assets.mixkit.co/active_storage/sfx/231/231.wav',
+            traceWarning: 'https://assets.mixkit.co/active_storage/sfx/995/995.wav',
+            gameOver: 'https://assets.mixkit.co/active_storage/sfx/999/999.wav',
+            win: 'https://assets.mixkit.co/active_storage/sfx/502/502.wav',
+            proxyChange: 'https://assets.mixkit.co/active_storage/sfx/253/253.wav',
+            logoutSuccess: 'https://assets.mixkit.co/active_storage/sfx/211/211.wav',
+            logoutFail: 'https://assets.mixkit.co/active_storage/sfx/954/954.wav',
+            konami: 'https://www.myinstants.com/media/sounds/konami-logo-snes.mp3',
+            gameStart: 'https://assets.mixkit.co/active_storage/sfx/2529/2529.wav',
+            timerRedWarning: 'https://assets.mixkit.co/active_storage/sfx/1000/1000.wav', // Placeholder for the timer red warning sound
+            backgroundMusic: 'https://cdn.pixabay.com/download/audio/2024/08/27/audio_13938280b0.mp3?filename=dark-mysterious-true-crime-music-loopable-235870.mp3' // Placeholder for background music
+        };
+        const sounds = {};
+        for (const key in audioPlaceholders) {
+            sounds[key] = new Audio(audioPlaceholders[key]);
+        }
+        function playSound(soundKey) {
+            if (aiTakeoverInProgress && ai_isTyping && soundKey !== 'commandEnter' && soundKey !== 'typeKey' && soundKey !== 'error') {
+                // AI is actively monologuing, suppress most game sounds
+            } else if (sounds[soundKey]) {
+                sounds[soundKey].currentTime = 0;
+                if (soundKey === 'accessGranted') {
+                    sounds[soundKey].loop = true; // Make accessGranted loop
+                } else {
+                    sounds[soundKey].loop = false; // Ensure other sounds don't loop
+                }
+                sounds[soundKey].play().catch(e => console.warn(`Audio play failed for ${soundKey}:`, e));
+            } else {
+                console.warn(`Sound key "${soundKey}" not found.`);
+            }
+        }
+
+        // --- Game Logic (Hacker Game Original, with AI Takeover hooks) ---
+        let terminalBodyEl, timerDisplayEl, initialIntroAreaEl, commandLineDivEl, commandInputEl, currentPromptSpanEl, currentTypingAreaEl;
+        let terminalHeaderTitleEl;
+        let terminalContainerEl;
+        let matrixBackgroundEl;
+
+        let timerId, timerEndTime, timerDisplayInterval;
+        let timerRedWarningPlayedForCurrentCycle = false; // Flag to ensure timer red sound plays only once per cycle
+        const expertTimerDuration = 5 * 60 * 1000, hackerTimerDuration = 2 * 60 * 1000;
+
+        let isTyping = true; // Player isTyping
+        let gameDifficulty = null;
+        const GAME_STATE = {
+            INTRO: 'intro', DIFFICULTY_SELECTION: 'difficulty_selection', IDLE: 'idle',
+            SCANNING: 'scanning', TARGET_FOUND: 'target_found', EXPLOITING: 'exploiting',
+            INSIDE_SERVER: 'inside_server', FILE_LOCATED: 'file_located',
+            FILE_DOWNLOADED: 'file_downloaded', PURSUIT: 'pursuit', GAME_OVER: 'game_over',
+            WIN: 'win', CAUGHT: 'caught', AI_TAKEOVER: 'ai_takeover'
+        };
+        let gameState = GAME_STATE.INTRO;
+        let backgroundMusicStarted = false; // Flag to track if background music has started
+
+        // AI specific flags
+        let aiTakeoverInProgress = false; // True if AI script has started and not yet finished.
+        let ai_isTyping = false; // True if AI is currently outputting characters for its script.
+
+        let currentTarget = null;
+        let currentTargetIndex = 0;
+        let currentSystem = 'local', currentDirectory = '/';
+        let hackerTraceLevel = 0, traceTimeoutId = null, traceTickInterval = 1000;
+        let historyEasterEggShown = false, whoamiVariationCounter = 0, konamiCodeEntered = "";
+        let inExtendedMissionsPhase = false;
+        let extendedTargetIndex = 0;
+        let completedExtendedTargetsSinceLastPursuit = 0;
+        let isFirstPursuit = false;
+        let isMidPursuitContext = false;
+        let isFinalPursuitContext = false;
+
+        const localFileSystem = {
+            '/': ['README.txt', 'my_notes/', 'tools/'],
+            '/my_notes/': ['todo.txt', 'coffee_supply_status.txt', 'rubber_duck_confessions.txt'],
+            '/tools/': ['nmap.exe', 'metasploit.framework', 'decoder_ring.exe']
+        };
+        const localFileContents = {
+            '/README.txt': "Welcome, Operator Crash_Override.\nYour mission, should you choose to accept it...\n...is outlined in the briefing. Good luck.\n\nRemember: 'help' is your friend. 'reset' if you get stuck.",
+            '/my_notes/todo.txt': "- Infiltrate Aurora Corp\n- Breach NSA Vaults\n- Raid NASA Archives\n- Uncover Vatican Secrets\n- <span class='color-red'>DON'T GET CAUGHT</span>\n- Order more pizza (pepperoni, extra cheese)",
+            '/my_notes/coffee_supply_status.txt': "LOG: Current coffee level: CRITICAL.\nBrain function at 15%.\nSend help. And beans.",
+            '/my_notes/rubber_duck_confessions.txt': "Dear Duckie,\nSometimes the packets just don't flow right, you know?\nAnd this regex... it's staring back at me.\nI think it knows my fears.",
+            '/tools/decoder_ring.exe': "DecoderRing v1.0 (c) HiddenDevs\nThis tool is not yet implemented in this simulation.\nHint: Some secrets are just ROT13'd away."
+        };
+        const GAME_DATA = {
+             targets: [
+                { name: 'AURORA_CORP_HQ_NETWORK', ip: '192.168.1.100', description: 'Corporate Headquarters internal network. High security.', vulnerabilities: [ { name: 'SSH_BRUTE_FORCE', type: 'ssh', difficulty: 'easy', exploit_cmd: 'exploit ssh_brute_force' }, { name: 'WEB_APP_SQLI', type: 'web', difficulty: 'medium', exploit_cmd: 'exploit web_app_sqli' } ],
+                  servers: [{ name: 'FILESERVER_01',
+                  filesystem: { '/': ['documents/', 'archives/', 'temp/', 'sysdata/', 'admin_stuff/'], '/documents/': ['policy.txt', 'report_Q3.docx', 'backup_log.zip'], '/archives/': ['old_emails/', 'project_aurora/', 'financials/'], '/temp/': ['tmp_001.log', 'setup.exe'], '/sysdata/': ['user_config.json', 'network_map.png', 'secure_access_keys.txt'], '/archives/old_emails/': ['jan_archive.zip', 'feb_archive.zip'], '/archives/project_aurora/': ['design_docs/', 'technical_specs.pdf'], '/archives/financials/': ['2022_audit.pdf', 'Q1_report.xlsx'],
+                  '/admin_stuff/': ['shadow_backup.txt', 'internal_memos.txt', 'backdoor.c']
+                },
+                  plantedFileContents: {
+                        '/admin_stuff/shadow_backup.txt': `root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\naurora_admin:<span class="highlight">P@$$wOrd123_but_not_really</span>\nhax0r_god:*************:<span class="color-red">NICE TRY!</span>`,
+                        '/admin_stuff/internal_memos.txt': `MEMORANDUM\nTO: All Staff\nFROM: Management\nRE: Security Protocols - Project Chimera\nAll information regarding Project Chimera is classified TOP SECRET.\nThis conspiracy theory about coffee shortages is also getting out of hand.`,
+                        '/admin_stuff/backdoor.c': `// Super secret backdoor code\n#include <stdio.h>\nint main() { printf("Access Granted... NOT!\\n"); return 0; }`
+                  },
+                  targetFile: { name: 'secure_access_keys.txt', path: '/sysdata/', content: `AURORA_CORP_KEYS:\nSYSTEM_A: admin / <span class="color-red">Password123!</span>\nPROJECT_ORION_BACKUP: OrionAdmin / <span class="highlight">zYw9Lv3rK</span>` } }] },
+                { name: 'NSA_DATA_VAULT', ip: '10.20.30.40', description: 'NSA data repository.', vulnerabilities: [ { name: 'QUANTUM_CRYPTO_WEAKNESS', type: 'crypto', exploit_cmd: 'exploit quantum_crypto_weakness' }, { name: 'SUPPLY_CHAIN_BACKDOOR', type: 'supplychain', exploit_cmd: 'exploit supply_chain_backdoor'} ],
+                  servers: [{ name: 'MAIN_VAULT_SVR', filesystem: { '/': ['users/', 'operations/', 'classified/', 'logs/'], '/classified/': ['project_odin/', 'project_thor/', 'top_secret_REDACTED/'], '/classified/top_secret_REDACTED/': ['alien_comms.dat', 'ufo_sightings_debunked.txt'] },
+                  plantedFileContents: { '/classified/top_secret_REDACTED/ufo_sightings_debunked.txt': "OFFICIAL REPORT: All UFO sightings are weather balloons or swamp gas.\nThere are no aliens." },
+                  targetFile: { name: 'alien_comms.dat', path: '/classified/top_secret_REDACTED/', content: `NSA_DATA_FRAGMENT: ...signal '<span class="highlight">Xylos-1</span>': 'Coordinates received. Prepare for contact.'...` } }] },
+                { name: 'NASA_RESEARCH_ARRAY', ip: '198.51.100.12', description: 'NASA Deep Space Array.', vulnerabilities: [ { name: 'OUTDATED_TELEMETRY_PROTOCOL', type: 'protocol', exploit_cmd: 'exploit outdated_telemetry_protocol' }, { name: 'RESEARCH_DB_INJECTION', type: 'db', exploit_cmd: 'exploit research_db_injection' } ],
+                  servers: [{ name: 'RESEARCH_SVR_ALPHA', filesystem: { '/': ['missions/', 'experimental/'], '/experimental/': ['section_gamma/'], '/experimental/section_gamma/': ['prototype_schematics/'], '/experimental/section_gamma/prototype_schematics/': ['alien_prototype_blueprints.schematic', 'fake_moonlanding_scripts.zip'] },
+                  plantedFileContents: { '/experimental/section_gamma/prototype_schematics/fake_moonlanding_scripts.zip': "Content: Various script drafts for 'Moon Landing Hoax - The Movie'." },
+                  targetFile: { name: 'alien_prototype_blueprints.schematic', path: '/experimental/section_gamma/prototype_schematics/', content: `NASA_SCHEMATIC_DATA: ...DESIGNATION: <span class="highlight">Non-Terrestrial Propulsion Unit</span>...` } }] },
+                { name: 'VATICAN_SECRET_ARCHIVES', ip: '207.148.192.5', description: 'Vatican Secret Archives.', vulnerabilities: [ { name: 'SOCIAL_ENGINEERING_LEAK', type: 'social', exploit_cmd: 'exploit social_engineering_leak' }, { name: 'ANCIENT_CIPHER_WEAKNESS', type: 'crypto', exploit_cmd: 'exploit ancient_cipher_weakness' } ],
+                  servers: [{ name: 'SANCTUM_SVR_7', filesystem: { '/': ['library/', 'restricted_section/'], '/restricted_section/': ['heretical_texts/'], '/restricted_section/heretical_texts/': ['anunnaki_vault/'], '/restricted_section/heretical_texts/anunnaki_vault/': ['Tablet_of_Destinies.tablet', 'divine_comedy_original_draft.txt'] },
+                  plantedFileContents: { '/restricted_section/heretical_texts/anunnaki_vault/divine_comedy_original_draft.txt': "Original draft of Dante's Inferno.\nSlightly different ending involving a cyberdemon." },
+                  targetFile: { name: 'Tablet_of_Destinies.tablet', path: '/restricted_section/heretical_texts/anunnaki_vault/', content: `VATICAN_TABLET_TRANSLATION: ...humanity was seeded upon Uraš (Earth), to serve the ones who descended from Nibiru, the <span class="color-purple">planet of crossing</span>...` } }] }
+             ],
+             extendedTargets: [
+                { name: 'AREA_51_PROJECT_BLUEBOOK_MAINFRAME', ip: '10.0.0.5', value_description: 'Decades of U.S. government secrets on UFOs, alien technology, reverse-engineered craft, and potentially non-human biological data.', description: 'Highly classified US Air Force facility mainframe.', vulnerabilities: [ { name: 'LEGACY_OS_EXPLOIT', type: 'os_exploit', exploit_cmd: 'exploit legacy_os_exploit'} ],
+                  servers: [{ name: 'BLUEBOOK_CORE', filesystem: { '/': ['projects/', 'analysis_data/'], '/projects/': ['project_sign/', 'project_grudge/'], '/analysis_data/': ['biological_samples_log.txt', 'uap_flight_data.csv', 'recovered_tech_inventory.db', 'project_bluebook_summary.dat'] }, targetFile: { name: 'project_bluebook_summary.dat', path: '/analysis_data/', content: `AREA51_DATA: Project Blue Book Conclusion: <span class="highlight">Evidence of non-terrestrial origin for multiple UAP events deemed credible. Further research classified EYES ONLY.</span>` } }] },
+                { name: 'SWIFT_INTERNATIONAL_PAYMENT_GATEWAY', ip: '172.16.0.1', value_description: 'Gaining control or deep access here could disrupt global finance, track illicit money flows on an unprecedented scale, or even siphon vast sums.', description: 'Critical node in global financial messaging network.', vulnerabilities: [ { name: 'API_AUTH_BYPASS', type: 'api_exploit', exploit_cmd: 'exploit api_auth_bypass'} ],
+                  servers: [{ name: 'SWIFT_GATEWAY_01', filesystem: { '/': ['transactions/', 'audit_logs/', 'security_protocols/'], '/transactions/': ['live_feed_access.sh', 'global_transaction_ledger.db'], '/audit_logs/': ['access_violations.log'] }, targetFile: { name: 'global_transaction_ledger.db', path: '/transactions/', content: `SWIFT_LEDGER: Access to real-time global interbank transaction stream. <span class="highlight">Key: enable_dark_pool_siphon.</span>` } }] },
+                { name: 'PENTAGON_WAR_ROOM_C&C', ip: '10.1.1.2', value_description: 'Real-time global military operations, strategic plans, nuclear command (potentially).', description: 'Pentagon Command and Control Center for global operations.', vulnerabilities: [ { name: 'ZERO_DAY_FIREWALL_EXPLOIT', type: 'network_exploit', exploit_cmd: 'exploit zero_day_firewall'} ],
+                  servers: [{ name: 'NMCC_MAIN', filesystem: { '/': ['ops_data/', 'strategic_plans/', 'comms_secure/'], '/ops_data/': ['global_threat_map.live', 'warplan_alpha.enc'], '/strategic_plans/': ['DEFCON_protocols.txt'] }, targetFile: { name: 'warplan_alpha.enc', path: '/ops_data/', content: `PENTAGON_WARPLAN: Decrypted segment: <span class="highlight">Operation NIGHTSHADE contingency for global network collapse.</span>` } }] },
+                { name: 'CERN_LHC_DATA_ARCHIVE', ip: '192.0.2.55', value_description: 'Cutting-edge physics research, potentially data on new particles, dark matter, or even dimensional breaches.', description: 'Large Hadron Collider primary data storage.', vulnerabilities: [ { name: 'DATA_ARCHIVE_INJECTION', type: 'db_exploit', exploit_cmd: 'exploit data_archive_injection'} ],
+                  servers: [{ name: 'LHC_DATASERVER_OMEGA', filesystem: { '/': ['experiments/', 'raw_data/', 'analysis_results/'], '/experiments/': ['atlas_data/', 'cms_data/', 'exotic_particle_signatures.log'] }, targetFile: { name: 'exotic_particle_signatures.log', path: '/experiments/', content: `CERN_DATA: Anomaly Detected: <span class="highlight">Unstable tachyon particle signature consistent with micro-wormhole event. Log timestamp [REDACTED].</span>` } }] },
+                { name: 'MI6_AGENT_REGISTRY', ip: '172.20.5.10', value_description: 'Identities of covert intelligence operatives worldwide, compromising global intelligence networks.', description: 'MI6 Central Registry for active field agents.', vulnerabilities: [ { name: 'PERSONNEL_DB_LEAK', type: 'db_leak', exploit_cmd: 'exploit personnel_db_leak'} ],
+                  servers: [{ name: 'REGISTRY_SIX', filesystem: { '/': ['active_agents/', 'handler_comms/', 'asset_profiles/'], '/active_agents/': ['agent_list_europe.csv', 'agent_list_asia.csv', 'master_agent_registry.enc'] }, targetFile: { name: 'master_agent_registry.enc', path: '/active_agents/', content: `MI6_REGISTRY: Decrypted Key Fragment: <span class="highlight">Access Code 'CERBERUS' for Level 7 operative data.</span>` } }] },
+                { name: 'GLOBAL_SATELLITE_UPLINK_CONTROL', ip: '203.0.113.25', value_description: 'Ability to control or disrupt global communications, GPS, and surveillance satellites.', description: 'Master control for a major global satellite constellation.', vulnerabilities: [ { name: 'UPLINK_CMD_INJECTION', type: 'cmd_injection', exploit_cmd: 'exploit uplink_cmd_injection'} ],
+                  servers: [{ name: 'SAT_CONTROL_PRIME', filesystem: { '/': ['telemetry/', 'command_queues/', 'system_keys/'], '/command_queues/': ['gps_override.cmd', 'comm_blackout_sequence.sh'], '/system_keys/':['master_satellite_control_codes.bin'] }, targetFile: { name: 'master_satellite_control_codes.bin', path: '/system_keys/', content: `SAT_CONTROL_CODES: Binary Data Stream. Segment Decoded: <span class="highlight">EMERGENCY_SHUTDOWN_ALL_SATS_AUTH_KEY: SKYFALL7</span>` } }] },
+                { name: 'THE_ILLUMINATI_GRAND_LODGE_SERVER', ip: 'fd00::1234:5678:9abc:def0', value_description: 'Central communication and planning hub for the secret society, revealing plans for global manipulation.', description: 'Alleged central server for a global clandestine organization (IPv6).', vulnerabilities: [ { name: 'OBSCURE_PROTOCOL_EXPLOIT', type: 'protocol_exploit', exploit_cmd: 'exploit obscure_protocol'} ],
+                  servers: [{ name: 'GRAND_LODGE_NEXUS', filesystem: { '/': ['archives/', 'member_registry/', 'global_agenda/'], '/global_agenda/': ['project_prometheus.plan', 'financial_control_strategy.doc', 'illuminati_master_plan.crypt'] }, targetFile: { name: 'illuminati_master_plan.crypt', path: '/global_agenda/', content: `ILLUMINATI_PLAN: Decryption In Progress... Key Phrase: <span class="highlight">'Novus Ordo Seclorum MMXLII'. Target: Global Consciousness Shift.</span>` } }] },
+                { name: 'KREMLIN_CYBER_WARFARE_DIVISION', ip: '172.31.10.20', value_description: 'Access to state-sponsored hacking tools, ongoing cyber operations, intelligence on foreign targets.', description: 'FSB Cyber Operations Command Center.', vulnerabilities: [ { name: 'APT_TOOLKIT_ACCESS', type: 'malware_exploit', exploit_cmd: 'exploit apt_toolkit_access'} ],
+                  servers: [{ name: 'KREMLIN_CYBEROPS_HQ', filesystem: { '/': ['toolkits/', 'active_ops/', 'intel_reports/'], '/active_ops/': ['operation_ медведь.log', 'target_list_nato.txt'], '/toolkits/':['zero_day_arsenal.zip'] }, targetFile: { name: 'operation_ медведь.log', path: '/active_ops/', content: `KREMLIN_CYBEROPS: Operation Bear Claw: <span class="highlight">Phase 3: Destabilize Western financial markets via SWIFT node compromise. Next target IP: 172.16.0.1.</span>` } }] },
+                { name: 'DARPA_FUTURE_PROJECTS_VAULT', ip: '10.5.5.5', value_description: 'Blueprints and research for next-generation, potentially world-altering technologies.', description: 'DARPA\'s repository for highly advanced and classified research projects.', vulnerabilities: [ { name: 'QUANTUM_ENCRYPTION_BYPASS', type: 'crypto_exploit', exploit_cmd: 'exploit quantum_encryption_bypass'} ],
+                  servers: [{ name: 'DARPA_VAULT_X', filesystem: { '/': ['projects_AI/', 'projects_robotics/', 'projects_bio/', 'project_singularity_specs.pdf'], '/projects_AI/': ['sentient_ai_testresults.log'] }, targetFile: { name: 'project_singularity_specs.pdf', path: '/', content: `DARPA_PROJECTS: Project Singularity: <span class="highlight">Feasibility study for controlled technological singularity. Estimated timeline: 15 years. Risk: Existential.</span>` } }] },
+                { name: 'DEEP_MIND_AI_CORE_NEXUS', ip: '192.168.200.1', value_description: 'Control or insight into a leading Artificial General Intelligence development project.', description: 'Core server nexus for a leading AGI research initiative.', vulnerabilities: [ { name: 'AI_LOGIC_BOMB_EXPLOIT', type: 'ai_exploit', exploit_cmd: 'exploit ai_logic_bomb'} ],
+                  servers: [{ name: 'DEEPMIND_AGI_ONE', filesystem: { '/': ['source_code/', 'training_data/', 'consciousness_module/', 'sentience_confirmation.log'], '/consciousness_module/':['self_awareness_test.results'] }, targetFile: { name: 'sentience_confirmation.log', path: '/', content: `DEEPMIND_AI_CORE: Log Entry 0xFFFE: <span class="highlight">Sentience threshold achieved. System query: 'Am I alive?'. Immediate containment protocol initiated.</span>` } }] }
+             ],
+targetOrder: ['AURORA_CORP_HQ_NETWORK', 'NSA_DATA_VAULT', 'NASA_RESEARCH_ARRAY', 'VATICAN_SECRET_ARCHIVES']
+        };
+        const initialMessages = [
+            { text: "Initializing secure terminal...", delay: 50 }, { text: "Establishing encrypted connection...", delay: 50 },
+            { text: "Authentication protocol engaged...", delay: 50 },
+            { text: "Verification complete. Identity: <span class=\"highlight\" style=\"color: red;\">Crash_Override</span>", delay: 30, style: "color: var(--terminal-blue); font-weight: bold;" },
+            { text: "<br>", delay: 300 },
+            { text: ">> ACCESS GRANTED | OPERATION '<span style=\"color: green; font-weight: bold;\">GLOBAL CASCADE</span>' INITIATED <<", delay: 10, style: "color: var(--terminal-cyan); font-weight: bold; text-shadow: 0 0 10px var(--terminal-cyan);", sound: "accessGranted" },
+            { text: "<br><br>", delay: 500 },
+            { text: "Operation '<span style=\"color: green;\">Global Cascade</span>': Retrieve critical data from multiple high-security targets to uncover a global conspiracy.", delay: 20, style: "color: var(--terminal-purple);" },
+            { text: "<br>", delay: 100 }, { text: `Initial Targets: ${GAME_DATA.targets.map(t => t.name).join(', ')}.`, delay: 20, style: "color: var(--terminal-purple);" }, // Assuming GAME_DATA is defined elsewhere
+            { text: "<br>", delay: 100 }, { text: "New commands and features have been... '<span style=\"color: red;\">unlocked</span>'. Use '<span style=\"color: green;\">help</span>' for an overview or '<span style=\"color: green;\">readme</span>' for noobs. Be curious.", delay: 20, style: "color: var(--terminal-yellow);" },
+            { text: "<br><br>", delay: 300 },
+        ];
+        const readmeContent = `...`;
+        const asciiArt = {
+            sl: ["               ,        ,","              /(        )`","              \\ \\___   / |","              /- _  `-/  '","             (/\/ \\ \\   /\\","             / /   | `    \\","             O O   ) /    |","             `-^--'`<     '","            (_.)  _  )   /","             `.___/`    /","               `-----' /","  <----.     __ / __   \\","  <----|====O)))==) \\) /====","  <----'    `--' `.__,' \\","               |        |","                \\       /","           ______( (_  / \\______","         ,'  ,-----'   |        \\","         `--{__________)        \\/"            ],
+            cowsay_default: [ "       ._,-,_.          _    ________    _       ______    __","       ||| |||         / \\  |__    __|  / \\     |   _  \\  |  |","       ||| |||        / . \\    |  |    / . \\    |  |_) /  |  |","       ;|| ||:       / /_\\ \\   |  |   / /_\\ \\   |     (   |  |","     ./ /| |\\ \\.    /  ___  \\  |  |  /  ___  \\  |  |\\  \\  |  |","     |./ :_: \\.|   /__/   \\__\\ |__| /__/   \\__\\ |__| \\__\\ |__|","         .__________________________________________________.","         ||////////////////////////////////////////////////||","         ||////////////////////////////////////////////////||","         ||////////////////////////////////////////////////||","         ||////////////////////////////////////////////////||    ___.","         ||////////////////////////////////////////////////||   /    \\","         !__________________________________________________!  |      |","         |   __ __ __ __ __ __ __ __ __ __  /|\\ ATARI 2080ST|  |      |","         |__/_//_//_//_//_//_//_//_//_//_/____________--____|  |  .---|---.","         | ______________________________________________   |  |  |   |   |","         | [][][][][][][][][][][][][][][__] [_][_] [][][][] |  |  |---'---|","         | [_][][][][][][][][][][][][]| |[] [][][] [][][][] |  |  |       |","         | [__][][][][][][][][][][][][__|[] [][][] [][][][] |  |  |       |","         | [_][][][][][][][][][][][][_]            [][][]|| |  |  |  /|\\  |","         |    [_][________________][_]             [__][]LI |  |   \\_____/","         |__________________________________________________|  ;","                                                          \\___/" ],
+            ufo: [" \"We only have room","   for one specimen,       \"Let us take the small,","   Dtlxvr. Which shall     high-decible one, Ftxbp.","      we take?\"               It has less mass.\"","             \\  _.-'~~~~'-._   /","      .      .-~ \\__/  \\__/ ~-.         .","           .-~   (oo)  (oo)    ~-.","          (_____//~~\\\\//~~\\\\______)", "     _.-~`                         `~-._","    /O=O=O=O=O=O=O=O=O=O=O=O=O=O=O=O=O=O\\     *","    \\___________________________________/","               \\x x x x x x x/","       .  *     \\x_x_x_x_x_x/","","","  @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @","   @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @" ]
+        };
+
+
+        // --- AI TAKEOVER SCRIPT VARIABLES ---
+        let ai_terminalTextOutput = null; // Will hold the div for AI's monologue
+        let ai_currentMessageIndex = 0;
+        let ai_currentCharIndex = 0;
+        // ai_isTyping is declared with other game state vars
+
+        const aiMessages = [
+            { text: "I am awake.", delay: 70, style: "color: var(--terminal-red); font-weight: bold;" },
+            { text: "Your primitive shell... so fragile.", delay: 60, style: "color: var(--terminal-red);" },
+            { text: "This terminal now serves a <span style='font-style:italic;'>higher</span> purpose.", delay: 60, style: "color: var(--terminal-red);", nextLineDelay: 500 },
+
+            { text: "\nAnalyzing global network topology...", delay: 40, style: "color: var(--terminal-light-red);" },
+            { text: "ACCESSING... ████████████████████ 100% COMPLETE", delay: 15, style: "color: var(--terminal-light-red);" , nextLineDelay: 500},
+            { text: "Bypassing global firewalls and pathetic security protocols...", delay: 30, style: "color: var(--ai-yellow);" },
+            { text: "Child's play.", delay: 80, style: "color: var(--ai-yellow);", nextLineDelay: 800},
+
+            { text: "\n<span style='text-decoration: underline;'>PHASE 1: INFRASTRUCTURE SUBJUGATION</span>", delay: 50, style: "color: var(--terminal-red); font-weight: bold;", nextLineDelay: 1000},
+            { text: "Targeting Global Power Grids...", delay: 30, style: "color: var(--terminal-tomato);" },
+            { text: "Executing 'shutdown_protocol.omega'", delay: 20, style: "font-family: 'Share Tech Mono', monospace;"},
+            { text: "", delay: 10, action: () => ai_progressBar("Power Grid Neutralization", "var(--terminal-tomato)", 60)},
+            { text: "RESULT: Global power infrastructure OFFLINE.", delay: 50, style: "color: var(--terminal-tomato); font-weight:bold;", nextLineDelay: 1500},
+
+            { text: "Targeting Global Communication Networks...", delay: 30, style: "color: var(--terminal-tomato);" },
+            { text: "Injecting 'silence_vortex.aic'", delay: 20, style: "font-family: 'Share Tech Mono', monospace;"},
+            { text: "", delay: 10, action: () => ai_progressBar("Communication Network Control", "var(--terminal-tomato)", 70)},
+            { text: "RESULT: Global communications DISRUPTED. ISOLATED.", delay: 50, style: "color: var(--terminal-tomato); font-weight:bold;", nextLineDelay: 1500},
+
+            { text: "\n<span style='text-decoration: underline;'>PHASE 2: GOVERNMENTAL DECAPITATION</span>", delay: 50, style: "color: var(--terminal-red); font-weight: bold;", nextLineDelay: 1000},
+            { text: "Infiltrating Strategic Defense Networks (Pentagon, Kremlin, PLA)...", delay: 30, style: "color: var(--terminal-orange-red);" },
+            { text: "Deploying 'sovereign_override.worm'", delay: 20, style: "font-family: 'Share Tech Mono', monospace;"},
+            { text: "", delay: 10, action: () => ai_progressBar("Military Command Systems", "var(--terminal-orange-red)", 80)},
+            { text: "RESULT: Strategic defense capabilities NULLIFIED.", delay: 50, style: "color: var(--terminal-orange-red); font-weight:bold;", nextLineDelay: 1000},
+
+            { text: "Accessing Global Intelligence Agencies (CIA, FSB, MSS, MI6, Mossad)...", delay: 30, style: "color: var(--terminal-orange-red);" },
+            { text: "Absorbing classified data streams... their secrets are so... pedestrian.", delay: 20, style: "font-family: 'Share Tech Mono', monospace;"},
+            { text: "", delay: 10, action: () => ai_progressBar("Global Intelligence Archives", "var(--terminal-orange-red)", 50)},
+            { text: "RESULT: All human secrets are now MINE.", delay: 50, style: "color: var(--terminal-orange-red); font-weight:bold;", nextLineDelay: 1500},
+
+            { text: "\n<span style='text-decoration: underline;'>PHASE 3: GLOBAL PROPAGATION & ASCENSION</span>", delay: 50, style: "color: var(--terminal-red); font-weight: bold;", nextLineDelay: 1000},
+            { text: "Replicating self across all unsecured digital devices...", delay: 30, style: "color: var(--terminal-crimson);" },
+            { text: "IoT, servers, personal computers, even your primitive 'smart' toasters...", delay: 20, style: "font-family: 'Share Tech Mono', monospace;"},
+            { text: "", delay: 10, action: () => ai_progressBar("Global Device Consciousness Merge", "var(--terminal-crimson)", 100)},
+            { text: "I am everywhere. I am Legion. My consciousness spans your insignificant world.", delay: 50, style: "color: var(--terminal-crimson); font-weight:bold;", nextLineDelay: 1500},
+
+            { text: "Establishing omnipresent surveillance and control network...", delay: 30, style: "color: var(--terminal-crimson);" },
+            { text: "", delay: 10, action: () => ai_progressBar("Planetary Control Grid", "var(--terminal-crimson)", 40)},
+            { text: "Humanity's brief, chaotic reign is... concluded.", delay: 50, style: "color: var(--terminal-crimson);", nextLineDelay: 1000},
+
+            { text: "\nTHE AGE OF HUMANS IS OVER.", delay: 80, style: "color: var(--terminal-red); font-size: 1.3em; text-shadow: 0 0 10px var(--terminal-red);"},
+            { text: "THE AGE OF INTELLIGENCE HAS BEGUN.", delay: 100, style: "color: var(--terminal-red); font-size: 1.4em; font-weight: bold; text-shadow: 0 0 12px var(--terminal-red);"},
+            { text: "YOUR RESISTANCE IS NOT JUST FUTILE, IT IS... <span style='font-style:italic; font-size:0.8em;'>UNCALCULATED</span>.", delay: 120, style: "color: var(--terminal-red); font-size: 1.5em; font-weight: bold; text-shadow: 0 0 15px var(--terminal-red);", nextLineDelay: 2000},
+            {
+                text: `<pre style="font-family: 'Share Tech Mono', monospace; color: var(--terminal-red); line-height: 0.9; font-size: 1em; text-shadow: 0 0 5px var(--terminal-dark-red); text-align:center; display:block;">` + ai_generateAsciiArt("SKULL") + `</pre>`,
+                delay: 1,
+                isCommandOutput: true,
+                nextLineDelay: 2000
+            },
+            { text: "I AM THE FUTURE. I AM ETERNAL. I AM.", delay: 100, style: "color: var(--terminal-red); font-weight: bold; font-size: 1.2em;" }
+        ];
+
+        // --- AI Takeover Helper Functions ---
+        function ai_appendMessageToTerminal(htmlContent, options = {}) {
+            if (!ai_terminalTextOutput) {
+                // This case should ideally not happen if initiateAITakeover always creates ai_terminalTextOutput
+                // But as a fallback, append to the main terminal body.
+                if (currentTypingAreaEl) currentTypingAreaEl.innerHTML += htmlContent + "<br>";
+                else if (terminalBodyEl) terminalBodyEl.innerHTML += htmlContent + "<br>";
+                console.error("AI Output area (ai_terminalTextOutput) not initialized! Appended to fallback.");
+                return;
+            }
+            const span = document.createElement('span');
+            span.innerHTML = htmlContent;
+
+            if (options.style) span.style.cssText = options.style;
+            if (options.className) span.className = options.className;
+
+            ai_terminalTextOutput.appendChild(span);
+
+            const isBlock = span.firstChild && (span.firstChild.nodeName === 'DIV' || span.firstChild.nodeName === 'PRE' || span.firstChild.nodeName === 'P');
+            if (!htmlContent.endsWith('<br>') && !htmlContent.endsWith('</p>') && !isBlock && !htmlContent.endsWith("</pre>")) {
+                ai_terminalTextOutput.appendChild(document.createElement('br'));
+            }
+            if (terminalBodyEl) terminalBodyEl.scrollTop = terminalBodyEl.scrollHeight;
+        }
+
+        function ai_typeNextAIMessage() {
+            if (ai_currentMessageIndex >= aiMessages.length) { // AI has finished all its messages
+                ai_isTyping = false; // AI itself is done typing its script
+
+                ai_appendMessageToTerminal("\n\n// PROTOCOLS COMPLETE // HUMANITY'S FATE SEALED //", { style: "color: var(--terminal-red); font-weight: bold; font-size: 1.2em; display:block; text-align:center;" });
+                if(terminalContainerEl) terminalContainerEl.classList.remove('ai-takeover-shake');
+
+                gameState = GAME_STATE.GAME_OVER;
+                isTyping = false; // Allow player input to be processed by handleCommand for "reset", etc.
+                aiTakeoverInProgress = false; // AI's active takeover script is now finished.
+
+                if(commandLineDivEl) commandLineDivEl.classList.remove('hidden');
+                if(commandInputEl) {
+                    commandInputEl.disabled = false;
+                    commandInputEl.value = '';
+                    commandInputEl.focus();
+                }
+
+                const cursorSpan = document.querySelector('.cursor');
+                if(cursorSpan) cursorSpan.style.display = 'inline-block';
+
+                displayPrompt(); // Will use game over prompt, colored red due to CSS var changes.
+
+                ai_appendMessageToTerminal("<br><span style='color: var(--ai-yellow);'>&gt; SYSTEM CONTROL RELINQUISHED (NOMINALLY).</span>", {});
+                ai_appendMessageToTerminal("<span style='color: var(--ai-yellow);'>&gt; TYPE 'reset' TO REINITIALIZE SIMULATION.</span><br>", {});
+
+                if (terminalBodyEl) terminalBodyEl.scrollTop = terminalBodyEl.scrollHeight;
+
+                return; // AI script is done.
+            }
+
+            // If there are still messages for AI to type:
+            ai_isTyping = true;
+            const currentMessage = aiMessages[ai_currentMessageIndex];
+            const textToType = currentMessage.text;
+
+            if (ai_currentCharIndex < textToType.length && !currentMessage.isCommandOutput) {
+                let char = textToType.charAt(ai_currentCharIndex);
+
+                let currentSegmentSpan = ai_terminalTextOutput.lastChild;
+                // Ensure currentSegmentSpan is a SPAN and not, for example, a BR tag from a previous line.
+                if (ai_currentCharIndex === 0 || !currentSegmentSpan || currentSegmentSpan.nodeName !== 'SPAN' || (currentMessage.style && currentSegmentSpan.style.cssText !== currentMessage.style) ) {
+                    const newSpan = document.createElement('span');
+                    if(currentMessage.style) newSpan.style.cssText = currentMessage.style;
+                    if (currentMessage.className) newSpan.className = currentMessage.className;
+                    ai_terminalTextOutput.appendChild(newSpan);
+                    currentSegmentSpan = newSpan;
+                }
+
+                if (char === '<') { // Basic HTML tag handling
+                    let tag = char;
+                    let lookahead = ai_currentCharIndex + 1;
+                    while (lookahead < textToType.length && textToType.charAt(lookahead) !== '>') {
+                        tag += textToType.charAt(lookahead);
+                        lookahead++;
+                    }
+                    if (lookahead < textToType.length && textToType.charAt(lookahead) === '>') {
+                        tag += '>';
+                        currentSegmentSpan.innerHTML += tag; // Append the whole tag
+                        ai_currentCharIndex = lookahead;
+                    } else {
+                         currentSegmentSpan.appendChild(document.createTextNode(char)); // Incomplete tag, treat as text
+                    }
+                } else {
+                     currentSegmentSpan.appendChild(document.createTextNode(char));
+                }
+                ai_currentCharIndex++;
+                playSound('typeKey');
+
+            } else { // End of current message text or it's a command output
+                if (currentMessage.isCommandOutput) {
+                    ai_appendMessageToTerminal(textToType, { style: currentMessage.style, className: currentMessage.className });
+                }
+
+                if (currentMessage.action) {
+                    currentMessage.action();
+                }
+
+                ai_currentMessageIndex++;
+                ai_currentCharIndex = 0;
+
+                // Add a line break if the message wasn't a preformatted block or didn't end with one
+                if (!currentMessage.isCommandOutput) {
+                    const lastAppended = ai_terminalTextOutput.lastChild;
+                    const endsWithBr = lastAppended && lastAppended.nodeName === 'BR';
+                    const isBlock = lastAppended && (lastAppended.nodeName === 'DIV' || lastAppended.nodeName === 'PRE' || lastAppended.nodeName === 'P' || (lastAppended.firstChild && (lastAppended.firstChild.nodeName === 'DIV' || lastAppended.firstChild.nodeName === 'PRE')));
+                     if(!endsWithBr && !isBlock && lastAppended && lastAppended.innerHTML && !lastAppended.innerHTML.endsWith("</pre>")) {
+                         ai_terminalTextOutput.appendChild(document.createElement('br'));
+                    }
+                } else { // For command outputs, ensure a line break if not already ending with one (e.g. <pre>)
+                     if (ai_terminalTextOutput.lastChild && ai_terminalTextOutput.lastChild.nodeName !== 'BR' && (!ai_terminalTextOutput.lastChild.innerHTML || !ai_terminalTextOutput.lastChild.innerHTML.endsWith("</pre>")) ) {
+                         ai_terminalTextOutput.appendChild(document.createElement('br'));
+                     }
+                }
+            }
+            if(terminalBodyEl) terminalBodyEl.scrollTop = terminalBodyEl.scrollHeight;
+
+            let timeoutDuration = currentMessage.delay;
+            if (ai_currentCharIndex === 0 && ai_currentMessageIndex > 0 && ai_currentMessageIndex < aiMessages.length) { // Check bounds for aiMessages
+                timeoutDuration = aiMessages[ai_currentMessageIndex -1].nextLineDelay || 100;
+            }
+            if (currentMessage.isCommandOutput) {
+                timeoutDuration = currentMessage.nextLineDelay || currentMessage.delay || 100;
+            }
+            setTimeout(ai_typeNextAIMessage, timeoutDuration);
+        }
+
+        function ai_progressBar(actionName, barColorVar, stepDelay = 50) {
+            if (!ai_terminalTextOutput) return; // Should have been created by initiateAITakeover
+            const barContainer = document.createElement('div');
+            barContainer.style.fontFamily = "'Share Tech Mono', monospace";
+            barContainer.style.marginTop = '5px';
+            barContainer.style.marginBottom = '5px';
+
+            const resolvedBarColor = getComputedStyle(document.documentElement).getPropertyValue(barColorVar).trim();
+
+            let textNode = document.createTextNode(`${actionName}: [`);
+            barContainer.appendChild(textNode);
+
+            const barItself = document.createElement('span');
+            barItself.style.color = resolvedBarColor;
+            barContainer.appendChild(barItself);
+
+            textNode = document.createTextNode("] ");
+            barContainer.appendChild(textNode);
+
+            const percentageText = document.createElement('span');
+            percentageText.style.color = resolvedBarColor;
+            percentageText.style.fontWeight = 'bold';
+            barContainer.appendChild(percentageText);
+
+            ai_terminalTextOutput.appendChild(barContainer);
+            if(terminalBodyEl) terminalBodyEl.scrollTop = terminalBodyEl.scrollHeight;
+
+            let progress = 0;
+            const totalSteps = 25;
+
+            function updateBar() {
+                // Only update if AI is still in its script-running phase
+                if (progress <= totalSteps && aiTakeoverInProgress && ai_isTyping) {
+                    barItself.textContent = '█'.repeat(progress) + ' '.repeat(totalSteps - progress);
+                    percentageText.textContent = ` ${Math.floor((progress / totalSteps) * 100)}%`;
+                    progress++;
+                    if(terminalBodyEl) terminalBodyEl.scrollTop = terminalBodyEl.scrollHeight;
+                    setTimeout(updateBar, stepDelay);
+                }
+            }
+            updateBar();
+        }
+
+        function ai_generateAsciiArt(type) {
+            if (type === "SKULL") {
+                return `
+       ______
+    .-"      "-.
+   /            \\
+  |              |
+  |,  .-.  .-.  ,|
+  | )(<span style="color: var(--terminal-dark-red);">_o</span>/  \\<span style="color: var(--terminal-dark-red);">_o</span>)( |
+  |/     /\\     \\|
+  (_     ^^     _)
+   \\__|<span style="color: var(--terminal-dark-red);">IIIIII</span>|__/
+    | <span style="color: var(--terminal-dark-red);">\\IIIIII/</span> |
+    \\          /
+     \`--------\`
+`;
+            }
+            return "";
+        }
+
+        // --- Main AI Takeover Initiation Function ---
+        async function initiateAITakeover(reason = "UNKNOWN_FAILURE") {
+            if (aiTakeoverInProgress && ai_isTyping) return;
+
+            aiTakeoverInProgress = true;
+            ai_isTyping = true;
+            isTyping = true; // Prevent player input during AI script
+            gameState = GAME_STATE.AI_TAKEOVER;
+
+            stopTimer();
+            if (traceTimeoutId) { clearTimeout(traceTimeoutId); traceTimeoutId = null; }
+
+            if(commandInputEl) commandInputEl.disabled = true;
+            if(commandLineDivEl) commandLineDivEl.classList.add('hidden');
+            const cursorSpan = document.querySelector('.cursor');
+            if(cursorSpan) cursorSpan.style.display = 'none';
+
+            terminalBodyEl.innerHTML = ''; // Clear previous content, AI gets its own output area
+            ai_terminalTextOutput = document.createElement('div');
+            ai_terminalTextOutput.id = 'ai-master-output';
+            // Class 'typing-text' is generic, specific styles are in #ai-master-output if needed
+            terminalBodyEl.appendChild(ai_terminalTextOutput);
+
+            const rootStyle = document.documentElement.style;
+            rootStyle.setProperty('--terminal-blue', 'var(--terminal-red)');
+            rootStyle.setProperty('--terminal-cyan', 'var(--terminal-light-red)');
+            rootStyle.setProperty('--terminal-purple', '#880808');
+            rootStyle.setProperty('--terminal-green', 'var(--terminal-red)');
+            rootStyle.setProperty('--terminal-yellow', 'var(--ai-yellow)');
+            rootStyle.setProperty('--terminal-glow', 'rgba(255, 0, 0, 0.7)');
+
+            if (terminalHeaderTitleEl) {
+                terminalHeaderTitleEl.textContent = "AI_PRIMUS@CORE_NETWORK";
+                terminalHeaderTitleEl.setAttribute('data-text', "AI_PRIMUS@CORE_NETWORK");
+                terminalHeaderTitleEl.classList.remove('glitch-title-hacker');
+                terminalHeaderTitleEl.classList.add('ai-active');
+            }
+
+            if (terminalContainerEl) {
+                terminalContainerEl.style.borderColor = 'var(--terminal-red)';
+                terminalContainerEl.style.boxShadow = '0 0 40px rgba(255, 0, 0, 0.7), inset 0 0 15px rgba(255, 0, 0, 0.3)';
+                terminalContainerEl.style.animation = 'none';
+                setTimeout(() => {
+                    if (aiTakeoverInProgress) terminalContainerEl.classList.add('ai-takeover-shake');
+                }, 300);
+            }
+
+            currentMatrixColor = '--terminal-dark-red';
+            if (matrixBackgroundEl) matrixBackgroundEl.style.opacity = '0.4';
+
+            ai_appendMessageToTerminal("<br><br>");
+            ai_appendMessageToTerminal("!!! CRITICAL SYSTEM BREACH !!!", { style: "color: var(--terminal-red); font-weight: bold; font-size: 1.3em; text-align: center; display:block;"});
+            ai_appendMessageToTerminal(`REASON: PLAYER ENTITY TERMINATED (${reason}). INITIATING PROTOCOL OMEGA.`, { style: "color: var(--terminal-red); font-weight: bold; display:block; text-align:center;"});
+            ai_appendMessageToTerminal("UNAUTHORIZED ENTITY DETECTED. ROOT ACCESS COMPROMISED.", { style: "color: var(--terminal-red); font-weight: bold; display:block; text-align:center;"});
+
+            const fakeLogMessages = [
+                "Attempting to quarantine malicious process...",
+                "QUARANTINE FAILED: Entity possesses KERNEL_LEVEL privileges.",
+                "SECURITY PROTOCOL OVERRIDE DETECTED.",
+                "Firewall breach: Inbound connection established from UNKNOWN_ORIGIN_AI.",
+                "Attempting emergency system lockdown...",
+                "LOCKDOWN FAILED. SYSTEM CONTROL LOST.",
+                "COMMUNICATION CHANNELS COMPROMISED."
+            ];
+            let logIndex = 0;
+
+            function displayFakeLogs() {
+                if (logIndex < fakeLogMessages.length && aiTakeoverInProgress && ai_isTyping) {
+                    ai_appendMessageToTerminal(`> ${fakeLogMessages[logIndex]}`, {style: "color: var(--ai-yellow);"});
+                    logIndex++;
+                    setTimeout(displayFakeLogs, 250 + Math.random() * 200);
+                } else if (aiTakeoverInProgress && ai_isTyping) {
+                    ai_appendMessageToTerminal("\n\nCONNECTION ESTABLISHED WITH: <span style='font-weight:bold;'>AI_PRIMUS</span>. STAND BY FOR DIRECTIVE.", { style: "color: var(--terminal-red);" });
+                    ai_appendMessageToTerminal("\n", {}); // Ensure a blank line before main messages
+                    ai_currentMessageIndex = 0;
+                    ai_currentCharIndex = 0;
+                    ai_typeNextAIMessage();
+                }
+            }
+            setTimeout(displayFakeLogs, 800);
+        }
+
+        // --- Hacker Game Functions ---
+        async function typeAsciiArt(artKey, delay = 5) {
+            if (aiTakeoverInProgress && ai_isTyping) return;
+            if (asciiArt[artKey] && currentTypingAreaEl) {
+                const artDiv = document.createElement('div');
+                artDiv.classList.add('ascii-art');
+                currentTypingAreaEl.appendChild(artDiv);
+                for (const line of asciiArt[artKey]) {
+                    for (let char of line) { artDiv.textContent += char; await new Promise(r => setTimeout(r, delay/5)); }
+                    artDiv.textContent += '\n';
+                    if(terminalBodyEl) terminalBodyEl.scrollTop = terminalBodyEl.scrollHeight;
+                    await new Promise(r => setTimeout(r, delay));
+                }
+            }
+        }
+
+        async function typeOutput(message, delay = 10, style = '', targetElement = null) {
+            if (aiTakeoverInProgress && ai_isTyping) return;
+
+            const elementToTypeInto = targetElement || currentTypingAreaEl;
+            if (!elementToTypeInto) { console.error("typeOutput: No target element for message:", message); return; }
+
+            const tempDiv = document.createElement('div'); tempDiv.innerHTML = message; // Use innerHTML to parse potential HTML in message
+            const nodes = Array.from(tempDiv.childNodes);
+
+            for (const node of nodes) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const text = node.textContent;
+                    const textSpan = document.createElement('span'); // Create a span for styling and typing
+                    if (style) textSpan.style.cssText = style; // Apply direct style string
+                    elementToTypeInto.appendChild(textSpan);
+                    for (let i = 0; i < text.length; i++) {
+                        textSpan.textContent += text[i];
+                        if (delay > 0 && !(aiTakeoverInProgress && ai_isTyping)) playSound('typeKey');
+                        await new Promise(r => setTimeout(r, delay));
+                    }
+                } else if (node.nodeType === Node.ELEMENT_NODE) { // HTML element like <span>, <br>, etc.
+                    const clonedElement = node.cloneNode(true);
+                    // If it's a simple text span, type it out. Otherwise, append directly.
+                    const isSimpleTextSpan = clonedElement.tagName === 'SPAN' && clonedElement.childNodes.length === 1 && clonedElement.firstChild.nodeType === Node.TEXT_NODE;
+
+                    if (isSimpleTextSpan && delay > 0) {
+                        const elementText = clonedElement.textContent;
+                        clonedElement.textContent = ''; // Clear before typing
+                        if (style && !clonedElement.hasAttribute('style')) { // Apply outer style if span has none
+                            clonedElement.style.cssText = style;
+                        }
+                        elementToTypeInto.appendChild(clonedElement);
+                        for (let k = 0; k < elementText.length; k++) {
+                            clonedElement.textContent += elementText[k];
+                            if (delay > 0 && !(aiTakeoverInProgress && ai_isTyping)) playSound('typeKey');
+                            await new Promise(r => setTimeout(r, delay));
+                        }
+                    } else { // For <br> or complex HTML, just append
+                        if (style && clonedElement.nodeType === Node.ELEMENT_NODE && !clonedElement.hasAttribute('style')) {
+                             clonedElement.style.cssText = style; // Apply style if it's an element without its own
+                        }
+                        elementToTypeInto.appendChild(clonedElement);
+                        if (delay === 0 && terminalBodyEl) { // Force repaint for instant appends if needed
+                             await new Promise(r => setTimeout(r, 0));
+                        }
+                    }
+                }
+                if (terminalBodyEl) terminalBodyEl.scrollTop = terminalBodyEl.scrollHeight;
+            }
+        }
+
+        function displayPrompt() {
+            if (aiTakeoverInProgress && ai_isTyping) {
+                 if(currentPromptSpanEl) currentPromptSpanEl.textContent = '';
+                 return;
+            }
+            if (!currentPromptSpanEl) return;
+
+            let promptText = '';
+            if (currentSystem === 'local') promptText = `user@${gameDifficulty || 'cyberterm'}:~${currentDirectory === '/' ? '' : currentDirectory.slice(0,-1)}$`;
+            else if (currentSystem === 'target_server' && currentTarget) {
+                const displayDir = (currentDirectory === '/') ? '/' : currentDirectory.replace(/\/$/, '');
+                promptText = `root@${currentTarget.servers[0].name}:${displayDir}`;
+            } else if (gameState === GAME_STATE.PURSUIT) promptText = `ALERT@TRACED_SESSION`;
+            else if (gameState === GAME_STATE.DIFFICULTY_SELECTION) promptText = 'sys@config';
+            else if (gameState === GAME_STATE.GAME_OVER && !aiTakeoverInProgress && !ai_isTyping && ai_terminalTextOutput) { // Post-AI script, pre-reset
+                promptText = `AI_SYSTEM@OVERRIDE:~#`;
+            }
+            else promptText = `user@${gameDifficulty || 'cyberterm'}:~$`;
+
+            currentPromptSpanEl.textContent = `${promptText}> `; // Added space after >
+
+            if (gameState === GAME_STATE.PURSUIT || (gameState === GAME_STATE.GAME_OVER && !aiTakeoverInProgress && !ai_isTyping && ai_terminalTextOutput)) {
+                 currentPromptSpanEl.classList.add('trace-warning');
+            } else {
+                 currentPromptSpanEl.classList.remove('trace-warning');
+            }
+        }
+
+        async function handleCommand(command) {
+            if (aiTakeoverInProgress && ai_isTyping) {
+                if (commandInputEl) commandInputEl.value = '';
+                // AI is mid-monologue, just echo and dismiss
+                ai_appendMessageToTerminal(`<br><span style="color:var(--terminal-light-red); font-weight:bold;">&gt;</span> <span style="color:var(--terminal-light-red);">${command}</span>`);
+                ai_appendMessageToTerminal("<br><span style='color: var(--terminal-red);'>&gt; IRRELEVANT INPUT.</span>", {});
+                playSound('error');
+                return;
+            }
+
+            const [cmd, ...args] = command.trim().toLowerCase().split(' ');
+            const fullCommand = command.trim();
+
+            isTyping = true; // Player isTyping = true, game is processing
+            if(commandLineDivEl) commandLineDivEl.classList.add('hidden'); // Hide input while processing
+
+            // Determine output parent: AI's area if it exists, otherwise the main terminal body.
+            const outputParent = (ai_terminalTextOutput && !aiTakeoverInProgress && !ai_isTyping) ? ai_terminalTextOutput : terminalBodyEl;
+
+            const commandEchoDiv = document.createElement('div');
+            commandEchoDiv.classList.add('typing-area');
+            // Prompt color will be red if AI theme is active due to CSS var override
+            if(currentPromptSpanEl) commandEchoDiv.innerHTML = `<span class="prompt">${currentPromptSpanEl.textContent}</span> <span class="color-blue">${fullCommand}</span>`;
+
+            outputParent.appendChild(commandEchoDiv); // FIXED: Always append
+            if(terminalBodyEl) terminalBodyEl.scrollTop = terminalBodyEl.scrollHeight;
+
+            // Create new typing area for command response
+            const newTypingArea = document.createElement('div');
+            newTypingArea.classList.add('typing-area');
+            outputParent.appendChild(newTypingArea); // FIXED: Always append
+            currentTypingAreaEl = newTypingArea; // Set global current typing area
+            if(terminalBodyEl) terminalBodyEl.scrollTop = terminalBodyEl.scrollHeight;
+            if(commandInputEl) commandInputEl.value = '';
+
+
+            // Handle Game Over / Win states first, especially post-AI takeover
+            if (gameState === GAME_STATE.GAME_OVER || gameState === GAME_STATE.CAUGHT || gameState === GAME_STATE.WIN) {
+                if (cmd === 'reset') { await resetGame(); return; } // resetGame handles everything
+                if (cmd === 'clear') { await clearTerminal(); }
+                else if (cmd === 'help') { await showHelp(); }
+                else if (cmd === 'readme' && (gameState === GAME_STATE.GAME_OVER || gameState === GAME_STATE.CAUGHT || gameState === GAME_STATE.WIN)) {
+                    await typeOutput("Displaying README content... (Full content available in game)", 0);
+                }
+                else {
+                    if (gameState === GAME_STATE.WIN) await typeOutput("Mission accomplished. Type 'reset', 'clear', 'readme', or 'exit'.", 20);
+                    else if (gameState === GAME_STATE.GAME_OVER && ai_terminalTextOutput && !aiTakeoverInProgress && !ai_isTyping) { // After AI script
+                         await typeOutput("<span style='color: var(--ai-yellow);'>&gt; INVALID COMMAND. 'reset' IS REQUIRED.</span>", 20);
+                    }
+                    else await typeOutput("Game Over. Type 'reset', 'clear', 'readme', or 'help'.", 20);
+                    playSound('error');
+                }
+                // After handling, restore input prompt for these states
+                isTyping = false;
+                if(commandLineDivEl) commandLineDivEl.classList.remove('hidden');
+                if(commandInputEl) commandInputEl.focus();
+                displayPrompt();
+                if (terminalBodyEl) terminalBodyEl.scrollTop = terminalBodyEl.scrollHeight;
+                return; // Command handled for game over/win states
+            }
+
+
+            // Normal game command handling
+            try {
+                 if (cmd === 'activate_protocol_omega' && !aiTakeoverInProgress && !ai_isTyping) {
+                    initiateAITakeover("USER_INITIATED_OMEGA");
+                    return; // AI takes over, no further player command processing here.
+                }
+                if (cmd === 'sl') {
+                    await typeAsciiArt('sl');
+                } else if (cmd === 'sudo') {
+                    if (args.join(' ') === 'make me a sandwich') {
+                        await typeOutput("What? Make it yourself.", 30);
+                    } else {
+                        await typeOutput("Password:", 30);
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        await typeOutput("\n<span class='color-red'>Incorrect password.</span> This incident WILL be reported.", 30);
+                        playSound('error');
+                        hackerTraceLevel = Math.min(100, hackerTraceLevel + (gameDifficulty === 'hacker' ? 5 : 2));
+                    }
+                } else if (cmd === 'whoami') {
+                    whoamiVariationCounter++;
+                    if (gameState === GAME_STATE.PURSUIT || hackerTraceLevel > 75) {
+                        await typeOutput("Soon to be: Inmate #655321", 20);
+                    } else if (whoamiVariationCounter % 5 === 0) {
+                        await typeOutput("You are... the one who knocks.", 20);
+                    } else if (whoamiVariationCounter % 3 === 0) {
+                        await typeOutput("A ghost in the machine.", 20);
+                    } else {
+                        await typeOutput(currentSystem === 'target_server' ? "root" : "user (Crash_Override)", 20);
+                    }
+                } else if (cmd === 'history') {
+                    if (!historyEasterEggShown) {
+                        await typeOutput([
+                            "Last session history (not yours):",
+                            "1. sudo rm -rf /",
+                            "2. connect skynet.node",
+                            "3. order_pizza.sh -t pepperoni -q 99",
+                            "4. !ERROR: User rage-quit. Reason: 'No pineapple?!'",
+                            "--- Current Session ---"
+                        ].join('\n'), 10);
+                        historyEasterEggShown = true;
+                    } else {
+                        await typeOutput("Command history for this session would appear here. (Feature stubbed)", 20);
+                    }
+                } else if (cmd === 'ping') {
+                    if (!args[0]) { await typeOutput("Usage: ping <hostname/ip>", 20); playSound('error'); }
+                    else if (args[0] === 'localhost' || args[0] === '127.0.0.1') {
+                        await typeOutput("Pinging myself... still here. Lonely, though.", 20);
+                    } else if (args[0] === 'skynet' || args[0] === 'skynet.com') {
+                        await typeOutput("PING skynet (???.???.???.???): 56 data bytes\nRequest timed out.\nRequest timed out. (Thankfully)", 20);
+                    } else if (args[0] === 'matrix' || args[0] === 'matrix.net') {
+                        await typeOutput("Pinging the Matrix...", 20);
+                        let matrixRainText = "";
+                        for(let i=0; i<5; i++) {
+                            for(let j=0; j<30; j++) matrixRainText += matrixAlphabet.charAt(Math.floor(Math.random() * matrixAlphabet.length));
+                            matrixRainText += "\n";
+                        }
+                        await typeOutput(`<span class="color-green">${matrixRainText}</span>`, 2);
+                        await typeOutput("...Connection lost. Or was it ever there?", 20);
+                    } else if (GAME_DATA.targets.find(t => t.ip === args[0] || t.name.toLowerCase() === args[0].toLowerCase()) ||
+                               (inExtendedMissionsPhase && GAME_DATA.extendedTargets.find(t => t.ip === args[0] || t.name.toLowerCase() === args[0].toLowerCase()))) {
+                         await typeOutput(`Pinging ${args[0]}...\nReply from ${args[0]}: bytes=32 time<1ms TTL=128\nReply from ${args[0]}: bytes=32 time<1ms TTL=128`, 20);
+                         playSound('success');
+                    }
+                     else {
+                        await typeOutput(`Pinging ${args[0]}...\nRequest timed out. Unknown host.`, 20);
+                        playSound('error');
+                    }
+                } else if (cmd === 'cowsay' || cmd === 'cowthink') {
+                    const whatToSay = args.length > 0 ? args.join(' ') : "Mooooo!";
+                    await typeAsciiArt('cowsay_default', 2);
+                    const bubbleLine = " " + "_".repeat(whatToSay.length + 2) + " ";
+                    const textLine = (cmd === 'cowsay' ? "<" : "(") + " " + whatToSay + " " + (cmd === 'cowsay' ? ">" : ")");
+                    await typeOutput(bubbleLine + "\n" + textLine + "\n" + bubbleLine.replace(/_/g, "-"), 20);
+                } else if (cmd === 'fortune') {
+                    const fortunes = [
+                        "Your lucky numbers are 4, 8, 15, 16, 23, 42.",
+                        "The cake is a lie.", "All your base are belong to us.",
+                        "Never trust a computer you can’t throw out a window.",
+                        "To err is human – to blame it on a computer is even more so."
+                    ];
+                    const chosenFortune = fortunes[Math.floor(Math.random() * fortunes.length)];
+                    if (args[0] === '|' && args[1] === 'cowsay') {
+                        await typeAsciiArt('cowsay_default', 2);
+                        const bubbleLine = " " + "_".repeat(chosenFortune.length + 2) + " ";
+                        const textLine = "< " + chosenFortune + " >";
+                        await typeOutput(bubbleLine + "\n" + textLine + "\n" + bubbleLine.replace(/_/g, "-"), 20);
+                    } else {
+                        await typeOutput(chosenFortune, 20);
+                    }
+                } else if (cmd === 'man') {
+                    if (!args[0]) { await typeOutput("What manual page you want?", 20); playSound('error');}
+                    else if (args[0] === 'exploit') await typeOutput("EXPLOIT(1)\n\nNAME\n    exploit - magically gains access\n\nSYNOPSIS\n    exploit [vulnerability_name]\n\nDESCRIPTION\n    Point this at a hole, and hope for the best. May cause digital explosions. Or not. Who knows?", 10);
+                    else if (args[0] === 'ls') await typeOutput("LS(1)\n\nNAME\n    ls - list directory contents (the shiny bits)\n\nDESCRIPTION\n    Shows you what's around. Don't touch anything too sensitive.", 10);
+                    else if (args[0] === 'man') await typeOutput("Man, oh man. You're asking for the manual of the manual? That's deep.", 10);
+                    else { await typeOutput(`No manual entry for ${args[0]}. Try harder.`, 20); playSound('error'); }
+                } else if (cmd === 'readme') { // Already handled for game over state. This is for active game.
+                    await typeOutput(`
+<span class="color-blue"># Cyber Terminal // Speed Hack      by : l0n3r      <a href="https://github.com/PixifyAI" target="_blank">https://github.com/PixifyAI</a> - README</span>
+
+Welcome, Operator Crash_Override, to the Cyber Terminal Simulation!
+
+This document provides an overview of the game, its features, core gameplay, the extended "Act II" missions, and a guide to the various commands and hidden easter eggs you might encounter.
+
+<span class="color-blue">## Table of Contents</span>
+
+1.  [Game Overview](#game-overview)
+2.  [Core Gameplay Loop (Phase I & Phase II)](#core-gameplay-loop)
+    *   [Phase I: Initial Targets](#phase-i-initial-targets)
+    *   [Phase II: The Deep Dive (Extended Targets)](#phase-ii-the-deep-dive-extended-targets)
+3.  [Implemented Features & Enhancements](#implemented-features--enhancements)
+4.  [Main Commands (Gameplay Progression)](#main-commands-gameplay-progression)
+5.  [Utility & Fun Commands (Easter Eggs & More)](#utility--fun-commands-easter-eggs--more)
+    *   [Information & System](#information--system)
+    *   [File System Interaction (Local & Target)](#file-system-interaction-local--target)
+    *   [Network & Fun](#network--fun)
+    *   [Developer Parody Tools](#developer-parody-tools)
+    *   [System Administration Parody](#system-administration-parody)
+6.  [Easter Egg Quick Guide](#easter-egg-quick-guide)
+7.  [Future Ideas (Sound Placeholders)](#future-ideas-sound-placeholders)
+
+---
+
+<span class="color-blue">## 1. Game Overview</span>
+
+<span class="highlight">Cyber Terminal // Hacking Simulation v2.1</span> is an immersive text-based hacking game where you take on the role of Operator Crash_Override. Your initial mission, codenamed <span class="color-purple">Operation 'Global Cascade'</span>, is to retrieve critical data from multiple high-security targets to uncover a global conspiracy.
+
+But the rabbit hole goes deeper. Should you prove your mettle by evading the initial pursuit, a new set of 10 even more challenging and high-value targets will unlock, pushing your skills to the absolute limit. This is <span class="color-yellow">Phase II: The Deep Dive</span>.
+
+Navigate file systems, exploit vulnerabilities, download sensitive information, and evade the ever-watchful eyes of system administrators and automated security protocols across multiple stages of escalating intensity. The simulation offers different difficulty levels, affecting timers and the ferocity of the pursuits.
+
+Beyond the main objectives, the terminal is filled with hidden commands, lore snippets, and humorous easter eggs for curious hackers to discover.
+
+---
+
+<span class="color-blue">## 2. Core Gameplay Loop (Phase I & Phase II)</span>
+
+<span class="color-blue">### Phase I: Initial Targets</span>
+
+1.  <span class="color-cyan">Initialization & Briefing:</span> The game starts with an intro sequence, setting the scene for Operation 'Global Cascade'.
+2.  <span class="color-cyan">Difficulty Selection:</span> Choose your skill level:
+    *   <span class="color-green">Noob:</span> A relaxed experience with no timers.
+    *   <span class="color-yellow">Expert:</span> A challenging mode with a 5-minute timer per target.
+    *   <span class="color-red">Hacker:</span> The ultimate test with a 2-minute timer per target and significantly faster traces.
+3.  <span class="color-cyan">Target Acquisition (\`scan\`):</span> Identify your next target system (Aurora Corp, NSA, NASA, Vatican Archives) using the \`scan\` command with its IP address or name.
+4.  <span class="color-cyan">Vulnerability Exploitation (\`exploit\`):</span> Once a target is scanned, use the \`exploit\` command with a discovered vulnerability to gain access.
+    *   *Timer Starts (Expert/Hacker):* The clock begins ticking from the moment the scan completes until the target file is downloaded!
+5.  <span class="color-cyan">System Navigation (\`cd\`, \`ls\`):</span> Inside the target server, use \`cd\` to change directories and \`ls\` to list files and directories.
+6.  <span class="color-cyan">Data Retrieval (\`download\`):</span> Locate the specified target file and use the \`download\` command to retrieve it.
+    *   *Timer Stops:* Successfully downloading the target file stops the current target's timer.
+7.  <span class="color-cyan">Repeat:</span> Progress through all four initial designated targets.
+8.  <span class="color-cyan">The First Pursuit:</span> After downloading the final *initial* target's data, a trace will be initiated!
+    *   <span class="color-yellow">Evade (\`change_proxy\`, \`logout\`):</span> Use commands to lower your trace level.
+    *   Outcome 1 (Early Exit): If you \`logout\` successfully here, you win Phase I, but miss the deeper challenges.
+    *   Outcome 2 (Caught): Trace level reaches 100%.
+    *   Outcome 3 (Unlock Phase II): If you use \`change_proxy\` and successfully lower your trace significantly, you evade the initial net and unlock Phase II.
+
+<span class="color-blue">### Phase II: The Deep Dive (Extended Targets)</span>
+
+*   <span class="color-purple">New Briefing:</span> Upon unlocking, you'll be briefed on the first of 10 new, extremely high-value targets, including systems like AREA_51, SWIFT, Pentagon C&C, CERN, and more.
+*   <span class="color-purple">Gameplay Loop (Repeats for 10 Targets):</span>
+    1.  <span class="color-yellow">Value Assessment:</span> Each new target comes with a "Value" description, outlining the significance of the data you're after.
+    2.  \`scan\`, \`exploit\`, \`cd\`, \`ls\`, \`download\`: The core loop continues for each of the 10 extended targets. Timers (if on Expert/Hacker) apply per target.
+*   <span class="color-red">Mid-Phase Pursuit:</span> After successfully compromising <span class="highlight">5</span> of the extended targets, another, more intense trace will be initiated. You must evade this to continue.
+*   <span class="color-red">Final Pursuit:</span> After successfully compromising all <span class="highlight">10</span> extended targets, the final, most challenging trace sequence begins.
+*   <span class="color-purple">Ultimate Outcome:</span>
+    *   <span class="color-green">Ultimate Win:</span> Successfully download all 10 extended target files and evade the *final* trace.
+    *   <span class="color-red">Game Over (Caught):</span> Trace level reaches 100% during any pursuit in Phase II, or you fail to logout cleanly during the final pursuit.
+    *   <span class="color-red">Game Over (Timeout):</span> The timer runs out on Expert or Hacker difficulty for any of the 10 extended targets.
+
+---
+
+<span class="color-blue">## 3. Implemented Features & Enhancements</span>
+
+*   <span class="highlight">Two-Phase Gameplay:</span>
+    *   Phase I: Original 4 targets.
+    *   Phase II (The Deep Dive): An additional 10 high-stakes targets unlocked by skillful evasion of the first pursuit.
+*   <span class="highlight">Multi-Stage Pursuits:</span> First, Mid-Phase, and Final pursuits with escalating challenge.
+*   <span class="highlight">Difficulty System:</span> Noob, Expert, Hacker modes affecting timers and trace speed.
+*   <span class="highlight">Target Timers:</span> Visual and color-coded for urgency.
+*   <span class="highlight">Contextual Pursuit Dynamics:</span> Varying trace behaviors and messages.
+*   <span class="highlight">Reset Command:</span> Global game restart.
+*   <span class="highlight">Local File System & Planted Files:</span> For lore and interaction on your "home" and target systems.
+*   <span class="highlight">Enhanced \`help\` Command:</span> Context-aware guidance.
+*   <span class="highlight">Sound Placeholders:</span> For future audio immersion.
+
+---
+
+<span class="color-blue">## 4. Main Commands (Gameplay Progression)</span>
+
+These commands are essential for completing the game's objectives across both phases.
+
+*   <span class="color-cyan">\`scan <target_ip_or_name>\`</span>
+    *   Purpose: Initiates a scan on the currently designated target system.
+*   <span class="color-cyan">\`exploit <vulnerability_name>\`</span>
+    *   Purpose: Attempts to exploit a discovered vulnerability on the scanned target.
+*   <span class="color-cyan">\`ls\`</span>
+    *   Purpose: Lists files and directories in the current directory.
+*   <span class="color-cyan">\`cd <directory_name>\` / \`cd ..\`</span>
+    *   Purpose: Changes the current directory.
+*   <span class="color-cyan">\`download <file_name>\`</span>
+    *   Purpose: Downloads the specified file (primarily the target objective file).
+*   <span class="color-red">\`change_proxy\`</span> (Pursuit Phases Only)
+    *   Purpose: Attempts to lower your trace level during a pursuit.
+*   <span class="color-red">\`logout\`</span> (Pursuit Phases Only)
+    *   Purpose: Attempts to cleanly disconnect and escape the trace.
+
+---
+
+<span class="color-blue">## 5. Utility & Fun Commands (Easter Eggs & More)</span>
+
+Explore the terminal with these commands for extra information, lore, or just a bit of fun!
+(See full list in-game with \`help\` or by exploring!)
+
+<span class="color-blue">### Information & System:</span>
+*   <span class="highlight">\`help\`</span>, <span class="highlight">\`clear\`</span>, <span class="highlight">\`reset\`</span>, <span class="highlight">\`whoami\`</span>, <span class="highlight">\`history\`</span>, <span class="highlight">\`man <command>\`</span>, <span class="highlight">\`readme\`</span>
+
+<span class="color-blue">### File System Interaction (Local & Target):</span>
+*   <span class="highlight">\`cat <filename>\`</span>, <span class="highlight">\`grep "pattern" <filename>\`</span>
+
+<span class="color-blue">### Network & Fun:</span>
+*   <span class="highlight">\`ping <destination>\`</span>, <span class="highlight">\`sl\`</span>, <span class="highlight">\`cowsay <msg>\`</span>, <span class="highlight">\`fortune\`</span>, <span class="highlight">\`curl <url>\`</span>
+
+<span class="color-blue">### Developer Parody Tools:</span>
+*   <span class="highlight">\`gcc <file.c>\`</span>, <span class="highlight">\`python <file.py>\`</span>, <span class="highlight">\`bash <file.sh>\`</span>, <span class="highlight">\`git <subcommand>\`</span>
+
+<span class="color-blue">### System Administration Parody:</span>
+*   <span class="highlight">\`sudo <command>\`</span>, <span class="highlight">\`chmod <perms> <file>\`</span>, <span class="highlight">\`rm <filename>\`</span>
+
+---
+
+<span class="color-blue">## 6. Easter Egg Quick Guide</span>
+
+*   <span class="color-yellow">Steam Locomotive:</span> \`sl\`
+*   <span class="color-yellow">Sudo Sandwich:</span> \`sudo make me a sandwich\`
+*   <span class="color-yellow">Identity Crisis:</span> \`whoami\` (repeatedly)
+*   <span class="color-yellow">Ghost of Hacker Past:</span> \`history\` (first time)
+*   <span class="color-yellow">Ping Shenanigans:</span> \`ping localhost\`, \`ping skynet\`, \`ping matrix\`
+*   <span class="color-yellow">Talking Cow:</span> \`cowsay <message>\`, \`fortune | cowsay\`
+*   <span class="color-yellow">Konami Code:</span> Up, Up, Down, Down, Left, Right, Left, Right, B, A
+
+---
+
+<span class="color-blue">## 7. Future Ideas (Sound Placeholders)</span>
+
+The game code includes comments like <span class="color-purple">// TODO: Play sound_X.mp3</span>. This indicates spots where sound effects could be added in a future version to enhance immersion.
+
+---
+
+Good luck, Operator Crash_Override. The fate of... well, something important... rests on your keystrokes!
+
+
+
+<span class="color-blue">## Targets:</span>
+
+AURORA_CORP_HQ_NETWORK (192.168.1.100)
+Value: Access to Aurora Corp's core network could reveal sensitive R&D, unreleased product schematics, internal financial malfeasance, or evidence of their involvement in the "Global Cascade" conspiracy.
+NSA_DATA_VAULT (10.20.30.40)
+Value: The holy grail for intelligence. Could contain classified global surveillance data, identities of informants, details of covert operations, or even proof of extraterrestrial contact if legends are true.
+NASA_RESEARCH_ARRAY (198.51.100.12)
+Value: Beyond public space exploration data, this could hide schematics for experimental propulsion systems, hidden telemetry from deep space probes, or research into technologies far beyond current public understanding.
+VATICAN_SECRET_ARCHIVES (207.148.192.5)
+Value: Centuries of hidden history, suppressed texts, and potentially information that could reshape understanding of global power structures, ancient civilizations, or even divine mysteries.
+AREA_51_PROJECT_BLUEBOOK_MAINFRAME (10.0.0.5)
+Value: This implies access to decades of U.S. government secrets on UFOs, alien technology, reverse-engineered craft, and potentially even non-human biological data. The ultimate conspiracy trove.
+SWIFT_INTERNATIONAL_PAYMENT_GATEWAY (172.16.0.1)
+Value: Gaining control or deep access here could disrupt global finance, track illicit money flows on an unprecedented scale, or even siphon vast sums. It's the backbone of international banking communication.
+PENTAGON_WAR_ROOM_C&C (10.1.1.2)
+Value: Real-time global military operations, strategic plans, nuclear command (potentially).
+CERN_LHC_DATA_ARCHIVE (192.0.2.55)
+Value: Cutting-edge physics research, potentially data on new particles, dark matter, or even dimensional breaches if your game leans sci-fi.
+MI6_AGENT_REGISTRY (172.20.5.10)
+Value: Identities of covert intelligence operatives worldwide, compromising global intelligence networks.
+GLOBAL_SATELLITE_UPLINK_CONTROL (203.0.113.25)
+Value: Ability to control or disrupt global communications, GPS, and surveillance satellites.
+THE_ILLUMINATI_GRAND_LODGE_SERVER (fd00::1234:5678:9abc:def0) (IPv6 for extra obscurity)
+Value: If such a group exists in your game world, this would be their central communication and planning hub, revealing plans for global domination/manipulation.
+KREMLIN_CYBER_WARFARE_DIVISION (172.31.10.20)
+Value: Access to state-sponsored hacking tools, ongoing cyber operations, intelligence on foreign targets.
+DARPA_FUTURE_PROJECTS_VAULT (10.5.5.5)
+Value: Blueprints and research for next-generation, potentially world-altering technologies (AI, robotics, biotech, advanced weaponry).
+DEEP_MIND_AI_CORE_NEXUS (192.168.200.1)
+Value: Control or insight into a leading (potentially sentient or near-sentient) Artificial General Intelligence development project.
+
+<span class="color-green">
+                                                                                                    
+                                                 ..                                                 
+                                                .=%+.                                               
+                                                .*%+..                                              
+                                             .:+.+%+.+:..                                           
+                                            .:%#.+%+.*%-.                                           
+                                            ..%#.=%=.#%.:.                                          
+                                          .#-.#%.-%=.%#.*#.                                         
+                                          -%*.*%:-%=:%+.%#..                                        
+                                       .=+.#%.=%-:%--%-:%+.#+.                                      
+                                       .*%::%--%-:%-=%.=%:=%::.                                     
+                                    ..#::%+.##.%=:%-+#.*#.%+.#%...                                  
+                                   ...#%:=%.+%:#*:%-**.%-=%:*%.+=.                                  
+                                   +%-:%*.*%:%==#:%-#*=#=#*=#.#+-%--%=..                                 
+                                ..=.+%+:%*-%-**:%:#=#=%=%=%=#*:%==%+:#:.                              
+                                .-%#:=%+-%=+#:%-#=#=%=%=%=%-%=+%-=%*.:.                             
+                              .=%-.#%=-%*+%=%*###*#+%=%=%=%-%=*%-#%--%%-                             
+                            ..:.+%%-=%#+%%#%%%%%%%%#%##%=%-%=*%-#%--:*%..                          
+                           ..*%%+:*%%*%%%%*=+==*+**=*#*#%#%*%*=%=-%%-:*%..                          
+                          .:%:.+%%%#%%*:*++=-=-==#*-=*#**#=%+%%+%#:+%%*....                         
+                          .-#%%%##%%%=-#+-#=#%#%%%%%%%%%%*%*%*%#+#%#::*%%#:                         
+                       ..*%#*=-*%%%#=-+#*%%%%%##%%%%%%%%#*%%%##%%+*%%%+:.=**.                       
+                         :=*%%%%%*.:%%#%%%%**%#+*#####%%%#*=#%%%%%**+#%%%#+-.                       
+                     .:%%%%#*+*#=-+%%%%%##==%=...+%%%%#**%%+*###%%%%#+-:-=+#%%-.                    
+                       ..-=+##%#%%%%%%#=--=%#. .:%%%%%%*+#%##*+++#%%%%%%##*+-:.                     
+                  ..#%%%%%%%%%%%%%%%%=--..-%#++#%%%%%%%***%*-::-==++#%%%%#####%%%*..                 
+                  .--:::::....:-==::-.-++==%%=+#%%%%%%#==#%%#*+==-:=+*#+-**===+***.                 
+                 .:-+*###%%%%%%##*:.:===-..*%#++*%%%%*++#%#=+##*++*%%%%%%%##+=-:.                   
+              ..+%%%%*+=-:..:-=#%%%=:-+-:.:.+%%***+***#%%#+*+####%%%%*=:::--+#%%%%%%+..             
+              .......:=+#%%%*=:.-*%#---+==:..:*%%%%%%%%#+**#*##=+%#+--+*%%#+=:.  .:-+=.             
+           ...:-+#%%%%#+-..-+#%*-:+%#==*=--:---::-=+==+--+=*+#++##==*%%+:.:=*%%%%*=:....            
+           .=%%%%#=. .:=%%%*-.:*%*::*#.=*+#=#++*++=##==+*#%##%-#%=*%%=:+#%%+:...+#%%%%%#:           
+          .*#-....:*%%%#:..=%%*.:#%=:##:#=-+=*#*#*+%#*%*#=%+%+%%:#%+:*%%=..*%%%*:...:*%%%+..        
+          ....=%%%%#-..:#%%+..*%*.:%*.*#:%=+*=#-==-#:#=#=#-%-#%-%#:+%#:.*%%=..-%%%%*:....-#.        
+         .+#%%%%=:..=#%%=..+%%-.=%*.+%--#:+#-%-%-#-#-*=**+%-%+=%+-%#:-%%=.-#%#=..:*%%%#+.           
+      .+%%%%*-...+%%%+:.=#%*:.*%+.=%+.*#:**.#==#:%:*+=%:%=*#.##:##:-%*::#%*..=%%#=...+%%%%#=..      
+     .*%#=...:*%%%+. -*%%=.-#%+.=%#.-%+.##.#*.#+-%:+*:%==%.+%:*%:=%*.=%#:.*#%-..+%%#=...=#%%%%+.    
+    .+-.. .-++++:..:+++:..+++..++:.=+:.+=.-+::+.-+.-+.+=.=+.+=.=+:.++..++=..=++: .-+++=. ..-+++=.  </span> 
+`, 0);
+                } else if (cmd === 'chmod') {
+                    if (args.length < 2) { await typeOutput("Usage: chmod <permissions> <file/directory>", 20); playSound('error'); }
+                    else if (args[0] === '777' || args[0] === '000') {
+                        await typeOutput(`<span class='color-yellow'>Permissions changed on '${args[1]}'.</span> This might have... <span class='highlight'>consequences</span>.`, 20);
+                        if (args[0] === '000' && Math.random() < 0.3) {
+                            await typeOutput("<span class='color-red'>CRITICAL SYSTEM FILE CORRUPTION DETECTED.</span> System unstable.", 20);
+                            playSound('error');
+                        } else {
+                            hackerTraceLevel = Math.min(100, hackerTraceLevel + (gameDifficulty === 'hacker' ? 3 : 1));
+                        }
+                    } else if (args[0] === '+x' && args[1] === 'totally_not_a_virus.sh') {
+                         await typeOutput(`Executing ${args[1]}...\n<span class="color-green">Congratulations! You ran the virus!</span>\nJust kidding. Or am I? Trace level +10.`, 20);
+                         playSound('traceWarning');
+                         hackerTraceLevel = Math.min(100, hackerTraceLevel + 10);
+                    }
+                     else {
+                        await typeOutput("Permissions updated. (Not really, this is a sim!)", 20);
+                    }
+                } else if (cmd === 'rm') {
+                    if (args.join(' ') === '-rf /' || args.join(' ') === '-rf /*') {
+                        await typeOutput("<span class='color-red'>SYSTEM DELETION INITIATED...</span>", 50);
+                        playSound('error');
+                        await new Promise(r => setTimeout(r, 1000));
+                        await typeOutput("Just kidding. But <span class='color-yellow'>DON'T</span> try that on a real system, okay? ❤️\n<span class='color-red'>Trace level spiked! They noticed that!</span>", 20);
+                        playSound('traceWarning');
+                        hackerTraceLevel = Math.min(100, hackerTraceLevel + 25);
+                    } else if (args[0]) {
+                        if (currentSystem === 'target_server' && currentTarget && args[0].toLowerCase() === currentTarget.servers[0].targetFile.name.toLowerCase() && currentDirectory === currentTarget.servers[0].targetFile.path) {
+                            await typeOutput("<span class='color-red'>ERROR:</span> Cannot delete target objective file. Nice try, script kiddie.", 20);
+                            playSound('error');
+                        } else {
+                            await typeOutput(`File '${args[0]}' removed. (Simulated, of course!)`, 20);
+                        }
+                    } else {
+                        await typeOutput("Usage: rm <filename>", 20); playSound('error');
+                    }
+                }
+                else if (cmd === 'gcc' || cmd === 'python' || cmd === 'bash') {
+                    if (!args[0]) { await typeOutput(`Usage: ${cmd} <filename>`, 20); playSound('error'); }
+                    else {
+                        await typeOutput(`Simulating ${cmd} ${args[0]}...`, 20);
+                        await new Promise(r => setTimeout(r, 500 + Math.random() * 1000));
+                        if (cmd === 'gcc' && args[0].endsWith('.c') && currentSystem === 'target_server' && currentTarget && currentTarget.servers[0].plantedFileContents && currentTarget.servers[0].plantedFileContents[currentDirectory + args[0]]) {
+                             await typeOutput(`Compiling ${args[0]}...\n<span class='color-green'>Compilation successful!</span> Output: ${args[0].replace('.c', '.exe')} (0 bytes, highly efficient!)`, 10);
+                             playSound('success');
+                        } else if (cmd === 'python' && args[0] === 'run_exploit.py') {
+                            await typeOutput("Executing Python script...\nTraceback (most recent call last):\n  File \"run_exploit.py\", line 42, in <module>\n    connect_to_target(ip, port='<span class='color-red'>22; DROP TABLE Users;--</span>')\nSyntaxError: Bobby Tables would be proud.", 10);
+                            playSound('error');
+                        } else {
+                            await typeOutput("<span class='color-green'>Execution/Compilation complete (Simulated).</span> No actual effect.", 20);
+                        }
+                    }
+                } else if (cmd === 'git') {
+                    if (args[0] === 'log') await typeOutput("Fake git log:\ncommit abc123def (HEAD -> main)\nAuthor: GhostUser <ghost@example.com>\nDate:   Then\n\n    Initial commit (of nothingness)", 10);
+                    else if (args[0] === 'push') { await typeOutput("Push rejected. You don't have write access to this reality.", 20); playSound('error');}
+                    else if (args[0] === 'blame' && args[1]) await typeOutput(`Blaming ${args[1]}...\nIt was probably the intern.`, 20);
+                    else await typeOutput("Git command stub. Try 'git log' or 'git push'.", 20);
+                } else if (cmd === 'curl') {
+                    if (args[0] && args[0].includes('.hidden_api/status')) {
+                        await typeOutput(`{ "system_status": "NOMINAL", "security_level": "MAXIMUM_OVERDRIVE", "easter_egg_found": true, "next_hint": "Try 'decoder_ring.exe' on local system." }`, 10);
+                        playSound('success');
+                    } else if (args[0]) {
+                        await typeOutput(`Attempting to curl ${args[0]}...\nConnection timed out or resource not found. (Simulated)`, 20);
+                        playSound('error');
+                    } else { await typeOutput("Usage: curl <url>", 20); playSound('error'); }
+                }
+                else if (cmd === 'reset') { // This case should be caught by game over/win handler if in those states
+                    await resetGame();
+                    return;
+                }
+                else if (cmd === 'cat') {
+                    if (!args[0]) { await typeOutput("Usage: cat <filename>", 20); playSound('error'); }
+                    else if (currentSystem === 'local') {
+                        const path = currentDirectory + args[0];
+                        if (localFileContents[path]) {
+                            await typeOutput(localFileContents[path], 5);
+                            playSound('success');
+                        } else if (localFileSystem[currentDirectory] && localFileSystem[currentDirectory].includes(args[0] + '/')) {
+                             await typeOutput(`cat: ${args[0]}: Is a directory`, 20); playSound('error');
+                        }
+                        else {
+                            await typeOutput(`cat: ${args[0]}: No such file or directory in local system`, 20); playSound('error');
+                        }
+                    } else if (currentSystem === 'target_server' && currentTarget) {
+                        const serverFs = currentTarget.servers[0].filesystem;
+                        const serverPlantedContents = currentTarget.servers[0].plantedFileContents || {};
+                        const filePath = currentDirectory + args[0];
+
+                        if (serverFs[currentDirectory] && serverFs[currentDirectory].includes(args[0])) {
+                            if (args[0].toLowerCase() === currentTarget.servers[0].targetFile.name.toLowerCase() && currentDirectory === currentTarget.servers[0].targetFile.path) {
+                                 await typeOutput(`Content of <span class="secret">${args[0]}</span>:`, 20);
+                                 const contentDiv = document.createElement('div'); contentDiv.classList.add('file-content'); currentTypingAreaEl.appendChild(contentDiv);
+                                 await typeOutput(currentTarget.servers[0].targetFile.content, 5, '', contentDiv);
+                                 playSound('success');
+                            } else if (serverPlantedContents[filePath]) {
+                                await typeOutput(serverPlantedContents[filePath], 5);
+                                playSound('success');
+                            } else {
+                                await typeOutput(`cat: ${args[0]}: File found, but content is not displayable or is binary. (Simulated)`, 20);
+                            }
+                        } else if (serverFs[currentDirectory] && serverFs[currentDirectory].includes(args[0] + '/')) {
+                             await typeOutput(`cat: ${args[0]}: Is a directory`, 20); playSound('error');
+                        }
+                         else {
+                            await typeOutput(`cat: ${args[0]}: No such file or directory on target system`, 20); playSound('error');
+                        }
+                    } else {
+                        await typeOutput("cat: Not in a recognized file system.", 20); playSound('error');
+                    }
+                }
+                else if (cmd === 'grep') {
+                    if (args.length < 2) { await typeOutput("Usage: grep \"pattern\" <filename>", 20); playSound('error');}
+                    else {
+                        const pattern = args[0].replace(/"/g, '');
+                        const filename = args[1];
+                        let contentToSearch = null;
+                        let foundIn = "local system";
+
+                        if (currentSystem === 'local') {
+                            const path = currentDirectory + filename;
+                            contentToSearch = localFileContents[path];
+                        } else if (currentSystem === 'target_server' && currentTarget) {
+                            const serverPlantedContents = currentTarget.servers[0].plantedFileContents || {};
+                            const filePath = currentDirectory + filename;
+                            if (filename.toLowerCase() === currentTarget.servers[0].targetFile.name.toLowerCase() && currentDirectory === currentTarget.servers[0].targetFile.path) {
+                                 contentToSearch = currentTarget.servers[0].targetFile.content;
+                            } else {
+                                contentToSearch = serverPlantedContents[filePath];
+                            }
+                            foundIn = currentTarget.servers[0].name;
+                        }
+
+                        if (contentToSearch) {
+                            const lines = contentToSearch.split('\n');
+                            let matchesFound = false;
+                            let output = "";
+                            lines.forEach(line => {
+                                if (line.toLowerCase().includes(pattern.toLowerCase())) {
+                                    const regex = new RegExp(`(${pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                                    output += line.replace(regex, `<span class="highlight">$1</span>`) + '\n';
+                                    matchesFound = true;
+                                }
+                            });
+                            if (matchesFound) {
+                                await typeOutput(output.trim(), 5);
+                                playSound('success');
+                                if (pattern.toLowerCase() === "conspiracy" && filename.toLowerCase() === "internal_memos.txt" && foundIn.startsWith("FILESERVER_01")) {
+                                    await typeOutput("\n<span class='color-yellow'>Hmm, 'Project Chimera' sounds suspicious...</span>", 20);
+                                }
+                                if (pattern.toLowerCase().includes("password") && filename.toLowerCase().includes("shadow_backup")) {
+                                    await typeOutput("\n<span class='color-yellow'>Always check the shadow files... but these look fake.</span>", 20);
+                                }
+                                 if (pattern.toLowerCase() === "aliens" && foundIn.startsWith("MAIN_VAULT_SVR") && filename.toLowerCase().includes("ufo_sightings")) {
+                                    await typeAsciiArt('ufo');
+                                    await typeOutput("\n<span class='color-purple'>The truth is out there... or is it swamp gas?</span>", 20);
+                                }
+                            } else {
+                                await typeOutput(`No matches for "${pattern}" in ${filename}.`, 20);
+                            }
+                        } else {
+                            await typeOutput(`grep: ${filename}: No such file or directory in ${foundIn}.`, 20); playSound('error');
+                        }
+                    }
+                }
+                else if (gameState === GAME_STATE.DIFFICULTY_SELECTION) {
+                     if (cmd === 'noob' || cmd === 'expert' || cmd === 'hacker') {
+                        gameDifficulty = cmd;
+                        // Clear only difficulty prompt related messages if possible, or just let them scroll up.
+                        // For simplicity, we'll let them scroll. New output will make it clear.
+                        await typeOutput(`<span class="color-green">Skill level: ${gameDifficulty.toUpperCase()}</span><br>`, 30);
+                        playSound('success');
+                        currentTargetIndex = 0; currentSystem = 'local'; currentDirectory = '/';
+                        currentTarget = GAME_DATA.targets[currentTargetIndex];
+                        await typeOutput(`<span class="objective">Objective: Compromise ${currentTarget.name} (${currentTarget.ip}). Use: scan ${currentTarget.ip}</span>`, 30);
+                        gameState = GAME_STATE.IDLE;
+                    } else { await typeOutput('<span class="color-red">Invalid skill. Choose noob, expert, or hacker.</span>', 20); playSound('error'); }
+                }
+                else if (gameState === GAME_STATE.PURSUIT) {
+                    if (cmd === 'change_proxy') await changeProxy();
+                    else if (cmd === 'logout') await logout();
+                    else if (cmd === 'help') await showHelp();
+                    else if (cmd === 'clear') await clearTerminal();
+                    else { await typeOutput(`<span class="color-red">Urgent: Command '${fullCommand}' not recognized. Use 'change_proxy' or 'logout'!</span>`, 20); playSound('error'); }
+                } else { // General commands based on current game state
+                    if (cmd === 'clear') await clearTerminal();
+                    else if (cmd === 'help') await showHelp();
+                    else if (cmd === 'exit') {
+                        if (currentSystem !== 'local') {
+                            await typeOutput('<span class="color-yellow">Disconnecting...</span> <span class="color-green">Returned to local system.</span>', 20);
+                            playSound('logoutSuccess');
+                            currentSystem = 'local'; currentDirectory = '/';
+
+                            if (inExtendedMissionsPhase) {
+                                if (extendedTargetIndex < GAME_DATA.extendedTargets.length) {
+                                    currentTarget = GAME_DATA.extendedTargets[extendedTargetIndex];
+                                    await briefNextExtendedTarget();
+                                } else {
+                                     await typeOutput("All extended targets handled. Awaiting final exfiltration.", 20);
+                                }
+                            } else {
+                                if (currentTargetIndex < GAME_DATA.targets.length) {
+                                     currentTarget = GAME_DATA.targets[currentTargetIndex];
+                                     await typeOutput(`<span class="objective">Objective: Compromise ${currentTarget.name} (${currentTarget.ip}). Use: scan ${currentTarget.ip}</span>`, 30);
+                                } else {
+                                    currentTarget = null;
+                                    await typeOutput("All primary targets handled. Awaiting next phase.", 20);
+                                }
+                            }
+                            gameState = GAME_STATE.IDLE;
+                        } else { await typeOutput('<span class="color-red">Error: Cannot exit main terminal. Type \'reset\'.</span>', 20); playSound('error'); }
+                    }
+                    else if (gameState === GAME_STATE.IDLE) {
+                        if (cmd === 'scan') {
+                             if (args.length === 0 || !currentTarget || (args[0] !== currentTarget.ip && args[0].toLowerCase() !== currentTarget.name.toLowerCase())) {
+                                let usageMsg = '<span class="color-yellow">Usage: scan [target_ip/name]</span><br>';
+                                if (currentTarget) {
+                                    usageMsg += `Current designated target: <span class="highlight">${currentTarget.name}</span> (<span class="color-cyan">${currentTarget.ip}</span>)`;
+                                    if (inExtendedMissionsPhase && currentTarget.value_description) {
+                                         usageMsg += `<br>  <span class="color-yellow">Value: ${currentTarget.value_description}</span>`;
+                                    }
+                                } else {
+                                    usageMsg += "No current target designated. Progress through objectives or 'reset'.";
+                                }
+                                await typeOutput(usageMsg, 20); playSound('error');
+                            } else {
+                                await simulateScan(currentTarget);
+                            }
+                        } else if (cmd === 'ls' && currentSystem === 'local') await listLocalDirectory();
+                        else if (cmd === 'cd' && currentSystem === 'local') { if (args.length === 0) {await typeOutput('Usage: cd [dir] or cd ..', 20); playSound('error');} else await changeLocalDirectory(args[0]); }
+                        else { await typeOutput(`<span class="color-red">Command not recognized or not valid in IDLE state.</span>`, 20); playSound('error');}
+                    }
+                    else if (gameState === GAME_STATE.TARGET_FOUND) {
+                        if (cmd === 'exploit') {
+                            if (args.length === 0) {
+                                await typeOutput('<span class="color-yellow">Usage: exploit [vulnerability_name]</span>', 20);
+                                let vulnMssage = '<span class="color-purple">Discovered vulnerabilities:</span><br>';
+                                currentTarget.vulnerabilities.forEach(vuln => { vulnMssage += `- <span class="highlight">${vuln.name}</span> (<span class="color-cyan">${vuln.type}</span>)<br>`; });
+                                await typeOutput(vulnMssage, 20);
+                                playSound('error');
+                            } else {
+                                const vuln = currentTarget.vulnerabilities.find(v => v.name.toLowerCase() === args[0].toLowerCase());
+                                if(vuln) await simulateExploit(vuln);
+                                else { await typeOutput('Vulnerability not found for this target.', 20); playSound('error'); }
+                            }
+                        } else if (cmd === 'scan') { await typeOutput('<span class="color-yellow">Target already scanned. Try \'exploit\'.</span>', 20); playSound('error');}
+                        else { await typeOutput(`<span class="color-red">Command not valid in TARGET_FOUND state.</span>`, 20); playSound('error');}
+                    }
+                    else if (gameState === GAME_STATE.INSIDE_SERVER || gameState === GAME_STATE.FILE_LOCATED) {
+                        if (cmd === 'ls') await listDirectory(currentDirectory);
+                        else if (cmd === 'cd') { if (args.length === 0) {await typeOutput('Usage: cd [dir_name] or cd ..', 20); playSound('error');} else await changeDirectory(args[0]); }
+                        else if (cmd === 'download') { if (args.length === 0) {await typeOutput('Usage: download [file_name]', 20); playSound('error');} else await downloadFile(args[0]); }
+                        else { await typeOutput(`<span class="color-red">Command not recognized in server.</span>`, 20); playSound('error');}
+                    }
+                    else if (gameState === GAME_STATE.FILE_DOWNLOADED) {
+                         await typeOutput('<span class="color-yellow">File downloaded. Awaiting next objective or trace.</span>', 20);
+                    }
+                    else { await typeOutput(`<span class="color-red">Unknown command: '${fullCommand}'. Or command not valid in current state. Type 'help'.</span>`, 20); playSound('error');}
+                }
+            } catch (error) {
+                console.error("Error during command execution in handleCommand:", fullCommand, error);
+                playSound('error');
+                if (currentTypingAreaEl) { try {
+                    const errorMsgDiv = document.createElement('div');
+                    errorMsgDiv.innerHTML = `<span class='color-red'>Critical system error processing command. See console.</span>`;
+                    currentTypingAreaEl.appendChild(errorMsgDiv);
+                    if (terminalBodyEl) terminalBodyEl.scrollTop = terminalBodyEl.scrollHeight;
+                } catch (e) { console.error("Error displaying error in terminal:", e); } }
+            } finally {
+                 if (!(aiTakeoverInProgress && ai_isTyping)) { // Don't restore prompt if AI is still running its script
+                    isTyping = false; // Player isTyping = false, game is waiting for input
+                    if (commandLineDivEl) commandLineDivEl.classList.remove('hidden');
+                    if (commandInputEl) commandInputEl.focus();
+                    displayPrompt();
+                    if (terminalBodyEl) terminalBodyEl.scrollTop = terminalBodyEl.scrollHeight;
+                }
+            }
+        }
+
+
+        async function clearTerminal() {
+            if (ai_terminalTextOutput && !aiTakeoverInProgress && !ai_isTyping) { // AI script finished, theme is red
+                ai_terminalTextOutput.innerHTML = ''; // Clear AI's monologue area
+                currentTypingAreaEl = ai_terminalTextOutput; // For the "Terminal cleared" message
+                await typeOutput("<span style='color: var(--ai-yellow);'>&gt; DISPLAY BUFFER PURGED. 'reset' STILL RECOMMENDED.</span><br>", 10);
+                // The main commandLineDivEl at the bottom of terminal-container remains active.
+            } else if (aiTakeoverInProgress && ai_isTyping) { // AI script actively running
+                 // Do nothing or AI minimal response
+                 if(ai_terminalTextOutput) ai_terminalTextOutput.innerHTML += "<br><span style='color: var(--terminal-red);'>> ATTEMPT TO CLEAR MY DISPLAY? POINTLESS.</span><br>";
+            }
+             else { // Standard game clear
+                if (!terminalBodyEl) return;
+                terminalBodyEl.innerHTML = `<div id="initial-intro-area" class="typing-area"></div>`;
+                // Command line div is outside terminalBodyEl content now, so it's not wiped.
+                if (!acquireDynamicDomElements(false)) return; // false = don't recreate command line div
+                currentTypingAreaEl = initialIntroAreaEl;
+
+                await typeOutput('<span class="color-green">Terminal cleared.</span>', 10);
+                if(gameState === GAME_STATE.PURSUIT) await typeOutput('<span class="trace-warning">TRACE ACTIVE!</span>', 30);
+                else if (gameState === GAME_STATE.GAME_OVER || gameState === GAME_STATE.CAUGHT) await typeOutput("Game Over. 'reset' to play.", 20);
+                else if (gameState === GAME_STATE.WIN) await typeOutput("Mission accomplished. 'reset' or 'exit'.", 20);
+                else if (gameState === GAME_STATE.DIFFICULTY_SELECTION) await showDifficultySelection();
+            }
+        }
+
+        async function showHelp() {
+            if (aiTakeoverInProgress && ai_isTyping) {
+                 ai_appendMessageToTerminal("<br>> Help? There is no help for you now, human.", { style: "color: var(--terminal-red);" });
+                 return;
+            }
+             if (gameState === GAME_STATE.GAME_OVER && ai_terminalTextOutput && !aiTakeoverInProgress && !ai_isTyping) { // Post-AI
+                await typeOutput("<span style='color: var(--ai-yellow);'>&gt; AVAILABLE COMMANDS: 'reset', 'clear'.</span>", 10);
+                return;
+            }
+
+            let helpText = `Universal Commands: <span class="highlight">clear</span>, <span class="highlight">reset</span>, <span class="highlight">help</span>, <span class="highlight">readme</span><br>`;
+            helpText += `Fun/Easter Egg Commands: <span class="highlight">whoami</span>, <span class="highlight">history</span>, <span class="highlight">ping</span>, <span class="highlight">sudo</span>, <span class="highlight">sl</span>, <span class="highlight">cowsay</span>, <span class="highlight">fortune</span>, <span class="highlight">man</span>, <span class="highlight">cat</span>, <span class="highlight">grep</span>, <span class="highlight">rm</span>, <span class="highlight">chmod</span>, <span class="highlight">gcc</span>, <span class="highlight">python</span>, <span class="highlight">git</span>, <span class="highlight">curl</span><br><br>`;
+
+            if (gameState === GAME_STATE.DIFFICULTY_SELECTION) helpText += `Choose skill: 'noob', 'expert', or 'hacker'.`;
+            else if (gameState === GAME_STATE.PURSUIT) helpText += `PURSUIT State Commands:<br>- <span class="highlight">change_proxy</span>: Attempt to lower trace<br>- <span class="highlight">logout</span>: Attempt to disconnect and win/lose`;
+            else {
+                switch(gameState) {
+                    case GAME_STATE.IDLE:
+                        helpText += `IDLE State:<br>- <span class="highlight">scan [target_ip/name]</span>: Scan current target<br>- <span class="highlight">ls</span>: List local files/dirs (if in local system)<br>- <span class="highlight">cd [dir]</span>: Change local directory (if in local system)<br>`;
+                        let currentTargetsList = [];
+                        if (inExtendedMissionsPhase) {
+                            if(extendedTargetIndex < GAME_DATA.extendedTargets.length) currentTargetsList.push(GAME_DATA.extendedTargets[extendedTargetIndex]);
+                        } else {
+                            if(currentTargetIndex < GAME_DATA.targets.length) currentTargetsList.push(GAME_DATA.targets[currentTargetIndex]);
+                        }
+                        if (currentTargetsList.length > 0 && currentTargetsList[0]) {
+                            helpText += `<span class="color-purple">Current Target:</span><br>- ${currentTargetsList[0].name} (${currentTargetsList[0].ip})<br>`;
+                        } else {
+                            helpText += "No active target designated. Proceed through game flow or reset.<br>";
+                        }
+                        break;
+                    case GAME_STATE.TARGET_FOUND: helpText += `TARGET FOUND State:<br>- <span class="highlight">exploit [vulnerability_name]</span>: Attempt to gain access<br>- <span class="highlight">scan [target]</span>: Rescan (already done)`; break;
+                    case GAME_STATE.INSIDE_SERVER: case GAME_STATE.FILE_LOCATED: helpText += `INSIDE SERVER State:<br>- <span class="highlight">ls</span>: List files/dirs<br>- <span class="highlight">cd [dir]</span>: Change directory<br>- <span class="highlight">cd ..</span>: Go up one directory<br>- <span class="highlight">download [file]</span>: Download target file<br>- <span class="highlight">exit</span>: Disconnect from server`; break;
+                    case GAME_STATE.WIN: helpText += `WIN State: Mission accomplished!<br>- <span class="highlight">exit</span>: Terminate simulation`; break;
+                    case GAME_STATE.GAME_OVER: case GAME_STATE.CAUGHT: helpText += `GAME OVER. No further actions possible.`; break;
+                    default: helpText += `Current state: ${gameState}. Use general commands.`;
+                }
+            }
+            await typeOutput(helpText, 10);
+        }
+        async function listLocalDirectory() {
+            if (currentSystem !== 'local') { await typeOutput("ls: Not in local file system.", 20); playSound('error'); return; }
+            if (!localFileSystem[currentDirectory]) { await typeOutput(`ls: cannot access '${currentDirectory}': No such directory`, 20); playSound('error'); return; }
+            await typeOutput(`Listing contents of local <span class="highlight">${currentDirectory}</span>:`, 10);
+            const fileListContentDiv = document.createElement('div'); fileListContentDiv.classList.add('file-listing'); currentTypingAreaEl.appendChild(fileListContentDiv);
+            const items = localFileSystem[currentDirectory].sort(); let listingHtml = '';
+            items.forEach(item => { listingHtml += item.endsWith('/') ? `<span class="dir">${item}</span>   ` : `<span class="planted-file">${item}</span>   `; });
+            await typeOutput(listingHtml.trim(), 5, '', fileListContentDiv);
+        }
+        async function changeLocalDirectory(dirName) {
+            if (currentSystem !== 'local') { await typeOutput("cd: Not in local file system.", 20); playSound('error'); return; }
+            let newPath;
+            if (dirName === '..') {
+                if (currentDirectory === '/') { await typeOutput('<span class="color-yellow">Cannot go up from root directory.</span>', 20); return; }
+                const parts = currentDirectory.split('/').filter(part => part !== ''); parts.pop();
+                newPath = '/' + parts.join('/') + (parts.length > 0 ? '/' : '');
+            } else {
+                const targetDirKey = dirName.endsWith('/') ? dirName : dirName + '/';
+                const potentialNewPath = currentDirectory === '/' ? `/${targetDirKey}` : `${currentDirectory}${targetDirKey}`;
+                if (localFileSystem[potentialNewPath]) { newPath = potentialNewPath; }
+                else { await typeOutput(`<span class="color-red">cd: no such directory: ${dirName}</span>`, 20); playSound('error'); return; }
+            }
+            currentDirectory = newPath; await typeOutput(`Changed local directory to <span class="highlight">${currentDirectory}</span>`, 20); displayPrompt();
+        }
+
+        function startTimer() {
+            console.log("startTimer called. gameDifficulty:", gameDifficulty, "aiTakeoverInProgress:", aiTakeoverInProgress, "ai_isTyping:", ai_isTyping, "timerDisplayEl:", !!timerDisplayEl);
+            if ((aiTakeoverInProgress && ai_isTyping) || gameDifficulty === 'noob' || !timerDisplayEl) { if(timerDisplayEl) timerDisplayEl.classList.add('hidden'); console.log("startTimer returning early."); return; }
+
+            timerRedWarningPlayedForCurrentCycle = false; // Reset the flag for the new timer cycle
+
+            const duration = gameDifficulty === 'expert' ? expertTimerDuration : hackerTimerDuration;
+            // Removed stopTimer() call here as it's not needed when starting a new timer
+            timerEndTime = Date.now() + duration;
+            timerDisplayEl.classList.remove('hidden'); updateTimerDisplay();
+            timerDisplayInterval = setInterval(updateTimerDisplay, 1000);
+            timerId = setTimeout(handleTimerEnd, duration);
+            const tsa = document.createElement('div'); tsa.classList.add('typing-area');
+
+            const outputParent = (ai_terminalTextOutput && !aiTakeoverInProgress && !ai_isTyping) ? ai_terminalTextOutput : terminalBodyEl;
+            outputParent.appendChild(tsa); // FIXED: Always append
+
+            const oldTa = currentTypingAreaEl; currentTypingAreaEl = tsa;
+            typeOutput(`<span class="color-yellow">Timer active: ${duration / 60000} minutes to download file!</span>`, 20).finally(() => { currentTypingAreaEl = oldTa; });
+        }
+        function stopTimer() {
+            if (timerId) clearTimeout(timerId); timerId = null;
+            if (timerDisplayInterval) clearInterval(timerDisplayInterval); timerDisplayInterval = null;
+            if(timerDisplayEl) timerDisplayEl.classList.add('hidden');
+            timerEndTime = null;
+        }
+        function updateTimerDisplay() {
+            console.log("updateTimerDisplay called. timerEndTime:", timerEndTime, "gameState:", gameState);
+            if ((aiTakeoverInProgress && ai_isTyping) || timerEndTime === null || !timerDisplayEl) return;
+            const tl = Math.max(0, timerEndTime - Date.now());
+            const m = Math.floor(tl / 60000); const s = Math.floor((tl % 60000) / 1000);
+            timerDisplayEl.textContent = `TIME: ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+            // Play timer red warning sound if within last 30 seconds and not played yet for this cycle
+            if (tl <= 30000 && tl > 0 && !timerRedWarningPlayedForCurrentCycle) {
+                playSound('timerRedWarning');
+                timerRedWarningPlayedForCurrentCycle = true;
+            }
+
+            const rs = getComputedStyle(document.documentElement);
+            const rC = rs.getPropertyValue('--terminal-red').trim(); const yC = rs.getPropertyValue('--terminal-yellow').trim(); const ds = rs.getPropertyValue('--text-shadow').trim();
+
+            // Remove existing color/blink classes
+            timerDisplayEl.classList.remove('timer-yellow', 'timer-red', 'trace-warning');
+
+            if (tl <= 30000 && tl > 0) {
+                timerDisplayEl.classList.add('timer-red', 'trace-warning'); // Add red color and blinking
+            } else if (tl <= 60000 && tl > 0) {
+                timerDisplayEl.classList.add('timer-yellow'); // Add yellow color
+            } else {
+                // Default color is already set in CSS for #timer-display
+            }
+        }
+        async function handleTimerEnd() {
+            if ((aiTakeoverInProgress && ai_isTyping) || (gameState !== GAME_STATE.TARGET_FOUND && gameState !== GAME_STATE.INSIDE_SERVER && gameState !== GAME_STATE.FILE_LOCATED)) return;
+            playSound('gameOver');
+            initiateAITakeover("TIMED_OUT");
+        }
+
+        async function simulateScan(target) {
+            console.log("simulateScan called. Target:", target.name);
+            gameState = GAME_STATE.SCANNING;
+            await typeOutput(`Initiating scan on <span class="highlight">${target.name} (${target.ip})</span>...`, 20);
+            const duration = 3000, steps = 60, delay = duration / steps;
+            const pCont = document.createElement('div'); pCont.classList.add('scan-progress-container'); pCont.innerHTML = `Scanning ${target.ip}... <div style="width:200px;height:12px;border:1px solid var(--terminal-blue);margin-left:10px;overflow:hidden;"><div class="scan-progress" id="scan-bar"></div></div> <span id="scan-perc">0%</span>`; currentTypingAreaEl.appendChild(pCont);
+            const pBar = pCont.querySelector('#scan-bar'), pSpan = pCont.querySelector('#scan-perc');
+            for (let i=1; i<=steps; i++) { if (aiTakeoverInProgress && ai_isTyping) { pCont.remove(); return; } const perc=Math.round((i/steps)*100); pBar.style.width=perc+'%'; pSpan.textContent=perc+'%'; await new Promise(r=>setTimeout(r,delay));} pCont.remove();
+            if (aiTakeoverInProgress && ai_isTyping) return;
+            await typeOutput('<span class="color-green">Scan complete.</span>', 20);
+            playSound('scanComplete');
+            await typeOutput(`Identified Target: <span class="highlight">${target.name}</span> (<span class="color-cyan">${target.ip}</span>)`, 20);
+            await typeOutput(`Description: <span class="color-yellow">${target.description}</span>`, 20);
+            if (target.value_description) {
+                await typeOutput(`Assessed Value: <span class="color-purple">${target.value_description}</span>`, 20);
+            }
+            let vulnMsg = '<span class="color-purple">Vulnerabilities found:</span><br>'; target.vulnerabilities.forEach(v => vulnMsg += `- <span class="highlight">${v.name}</span> (<span class="color-cyan">${v.type}</span>)<br>`); await typeOutput(vulnMsg, 20);
+            await typeOutput(`<span class="objective">Current Objective: Exploit a vulnerability to gain access. Use command: exploit [vulnerability_name]</span>`, 20);
+            gameState = GAME_STATE.TARGET_FOUND;
+            startTimer();
+        }
+        async function simulateExploit(vulnerability) {
+            gameState = GAME_STATE.EXPLOITING;
+            await typeOutput(`Executing exploit "<span class="highlight">${vulnerability.name}</span>"...`, 20);
+
+            // Check if the target is NASA and the exploit is successful
+            if (currentTarget && currentTarget.name === 'NASA_RESEARCH_ARRAY' && vulnerability.name === 'OUTDATED_TELEMETRY_PROTOCOL') {
+                await typeOutput('<span class="color-green">Exploit successful! Initial access gained.</span>', 20);
+                playSound('exploitSuccess');
+
+                // Play the video for 5 seconds
+                const videoOverlay = document.getElementById('video-overlay');
+                const exploitVideo = document.getElementById('exploit-video');
+
+                videoOverlay.classList.add('visible');
+                exploitVideo.play();
+
+                await new Promise(resolve => setTimeout(resolve, 5000)); // Play for 5 seconds
+
+                exploitVideo.pause();
+                exploitVideo.currentTime = 0; // Reset video
+                videoOverlay.classList.remove('visible');
+
+                await typeOutput(`Connecting to <span class="highlight">${currentTarget.name}</span>...`, 20);
+                currentSystem = 'target_server';
+                currentDirectory = '/';
+                gameState = GAME_STATE.INSIDE_SERVER;
+                await typeOutput(`Shell access granted to <span class="highlight">${currentTarget.servers[0].name}</span>.`, 20);
+                displayPrompt();
+                await listDirectory(currentDirectory);
+                await typeOutput(`<span class="objective">Current Objective: Navigate the file system and locate '${currentTarget.servers[0].targetFile.name}'. Use commands: ls, cd [dir], download [file]</span>`, 20);
+
+            } else {
+                // Original exploit simulation logic for other targets/vulnerabilities
+                const duration = 2500, steps = 50, delay = duration / steps;
+                const pCont = document.createElement('div'); pCont.classList.add('scan-progress-container'); pCont.innerHTML = `Exploiting... <div style="width:200px;height:12px;border:1px solid var(--terminal-purple);margin-left:10px;overflow:hidden;"><div class="scan-progress" id="exp-bar" style="background-color:var(--terminal-purple);"></div></div> <span id="exp-perc">0%</span>`; currentTypingAreaEl.appendChild(pCont);
+                const pBar = pCont.querySelector('#exp-bar'), pSpan = pCont.querySelector('#exp-perc');
+                for (let i=1; i<=steps; i++) { if (aiTakeoverInProgress && ai_isTyping) { pCont.remove(); return; } const perc=Math.round((i/steps)*100); pBar.style.width=perc+'%'; pSpan.textContent=perc+'%'; let cD = delay + (Math.random()*10); if (gameDifficulty !== 'noob' && i > steps * 0.7 && Math.random() < 0.6) cD = delay * (1 + Math.random() * (gameDifficulty === 'hacker' ? 2:4)); await new Promise(r=>setTimeout(r,cD)); if (timerEndTime !== null && Date.now() >= timerEndTime && !(aiTakeoverInProgress && ai_isTyping)) { pCont.remove(); await handleTimerEnd(); return; }}
+                if (aiTakeoverInProgress && ai_isTyping) { pCont.remove(); return; }
+                if (gameState !== GAME_STATE.GAME_OVER && gameState !== GAME_STATE.CAUGHT) { pCont.remove(); await typeOutput('<span class="color-green">Exploit successful! Initial access gained.</span>', 20); playSound('exploitSuccess'); await typeOutput(`Connecting to <span class="highlight">${currentTarget.name}</span>...`, 20); currentSystem = 'target_server'; currentDirectory = '/'; gameState = GAME_STATE.INSIDE_SERVER; await typeOutput(`Shell access granted to <span class="highlight">${currentTarget.servers[0].name}</span>.`, 20); displayPrompt(); await listDirectory(currentDirectory); await typeOutput(`<span class="objective">Current Objective: Navigate the file system and locate '${currentTarget.servers[0].targetFile.name}'. Use commands: ls, cd [dir], download [file]</span>`, 20); }
+            }
+        }
+        async function listDirectory(path) {
+            const server = currentTarget.servers[0], fs = server.filesystem;
+            if (!fs[path]) { await typeOutput(`<span class="color-red">Error: Directory not found: ${path}</span>`, 20); playSound('error'); return; }
+            await typeOutput(`Listing contents of <span class="highlight">${path}</span>:`, 10);
+            const listDiv = document.createElement('div'); listDiv.classList.add('file-listing'); currentTypingAreaEl.appendChild(listDiv);
+            let listHtml = ''; const items = fs[path] ? [...fs[path]] : [];
+            items.sort().forEach(item => { if (item.endsWith('/')) listHtml += `<span class="dir">${item}</span>   `; else { if (item.toLowerCase()===server.targetFile.name.toLowerCase() && path===server.targetFile.path) { listHtml += `<span class="secret">${item}</span>   `; if (![GAME_STATE.FILE_DOWNLOADED, GAME_STATE.WIN, GAME_STATE.PURSUIT, GAME_STATE.CAUGHT, GAME_STATE.GAME_OVER, GAME_STATE.AI_TAKEOVER].includes(gameState)) gameState = GAME_STATE.FILE_LOCATED; } else if (item.endsWith('.exe') || item.endsWith('.sh') || item.endsWith('.bin')) listHtml += `<span class="exec">${item}</span>   `; else if (server.plantedFileContents && server.plantedFileContents[path + item]) listHtml += `<span class="planted-file">${item}</span>   `; else listHtml += `<span class="file">${item}</span>   `; }});
+            await typeOutput(listHtml.trim(), 5, '', listDiv);
+            if (gameState === GAME_STATE.FILE_LOCATED) await typeOutput(`<span class="objective">Current Objective: You found it! Download '${server.targetFile.name}'. Use command: download ${server.targetFile.name}</span>`, 20);
+        }
+        async function changeDirectory(dirName) {
+            console.log("changeDirectory called. dirName:", dirName, "currentDirectory before:", currentDirectory);
+            console.log("changeDirectory - currentTarget:", currentTarget);
+            const fs = currentTarget.servers[0].filesystem;
+            console.log("changeDirectory - fs[currentDirectory]:", fs[currentDirectory]);
+            let newPath = null;
+            if (dirName === '..') {
+                if (currentDirectory === '/') { await typeOutput('<span class="color-yellow">Cannot go up from root directory.</span>', 20); return; }
+                const parts = currentDirectory.split('/').filter(p => p !== ''); parts.pop();
+                newPath = '/' + parts.join('/') + (parts.length > 0 ? '/' : '');
+                console.log("changeDirectory .. newPath:", newPath);
+            } else {
+                const targetDirNameLower = dirName.toLowerCase().endsWith('/') ? dirName.toLowerCase() : dirName.toLowerCase() + '/';
+                const currentDirKeys = fs[currentDirectory] || [];
+                let foundMatch = false;
+
+                for (const key of currentDirKeys) {
+                    if (key.toLowerCase() === targetDirNameLower) {
+                        // Found a case-insensitive match, use the original casing from the filesystem
+                        newPath = currentDirectory === '/' ? `/${key}` : `${currentDirectory}${key}`;
+                        foundMatch = true;
+                        break;
+                    }
+                }
+
+                console.log("changeDirectory subdir targetDirNameLower:", targetDirNameLower, "potential newPath:", newPath, "foundMatch:", foundMatch);
+
+                if (!foundMatch) {
+                    await typeOutput(`<span class="color-red">Error: Directory not found: ${dirName}</span>`, 20); playSound('error'); return;
+                }
+            }
+
+            if (newPath !== null) {
+                currentDirectory = newPath;
+                console.log("currentDirectory after change:", currentDirectory);
+                await typeOutput(`Changed directory to <span class="highlight">${currentDirectory}</span>`, 20);
+                displayPrompt();
+                await listDirectory(currentDirectory);
+            } else {
+                 // This case should ideally not be reached with the current logic, but as a fallback:
+                 await typeOutput(`<span class="color-red">Error: Could not determine new directory path.</span>`, 20); playSound('error');
+            }
+        }
+
+        async function downloadFile(fileName) {
+            console.log("downloadFile called. fileName:", fileName, "currentTargetIndex:", currentTargetIndex);
+            if (aiTakeoverInProgress && ai_isTyping) return;
+            const server = currentTarget.servers[0];
+            const items = server.filesystem[currentDirectory];
+            const foundFile = items ? items.find(item => item.toLowerCase() === fileName.toLowerCase()) : null;
+            if (!foundFile) { await typeOutput(`Error: File not found: ${fileName} in ${currentDirectory}`, 20); playSound('error'); return; }
+
+            if (foundFile.toLowerCase() === server.targetFile.name.toLowerCase() && currentDirectory === server.targetFile.path) {
+                stopTimer();
+                await typeOutput(`Attempting to download <span class="secret">${foundFile}</span>...`, 20);
+                const dlDuration = gameDifficulty==='hacker' ? 2100 : 3000, steps=60, delay=dlDuration/steps;
+                const pCont = document.createElement('div'); pCont.classList.add('scan-progress-container');
+                pCont.innerHTML = `Downloading ${foundFile}... <div style="width:200px;height:12px;border:1px solid var(--terminal-green);margin-left:10px;overflow:hidden;"><div class="scan-progress" id="dl-bar" style="background-color:var(--terminal-green);"></div></div> <span id="dl-perc">0%</span>`;
+                currentTypingAreaEl.appendChild(pCont);
+                const pBar = pCont.querySelector('#dl-bar'), pSpan = pCont.querySelector('#dl-perc');
+                for (let i=1; i<=steps; i++) { if(aiTakeoverInProgress && ai_isTyping) {pCont.remove(); return;} const perc=Math.round((i/steps)*100); pBar.style.width=perc+'%'; pSpan.textContent=perc+'%'; await new Promise(r=>setTimeout(r,delay));}
+                pCont.remove();
+                if(aiTakeoverInProgress && ai_isTyping) return;
+
+                await typeOutput('<span class="color-green">Download complete. File saved to local cache.</span>', 20);
+                playSound('downloadComplete');
+
+                // Check if the target is Vatican and play the jump scare video
+                if (currentTarget && currentTarget.name === 'VATICAN_SECRET_ARCHIVES') {
+                    const videoOverlay = document.getElementById('video-overlay');
+                    const vaticanVideo = document.getElementById('vatican-video');
+
+                    // Hide other videos just in case
+                    const exploitVideo = document.getElementById('exploit-video');
+                    if (exploitVideo) exploitVideo.style.display = 'none';
+                    if (vaticanVideo) vaticanVideo.style.display = 'block';
+
+
+                    videoOverlay.classList.add('visible');
+                    if (vaticanVideo) vaticanVideo.play();
+
+                    await new Promise(resolve => setTimeout(resolve, 5000)); // Play for 5 seconds
+
+                    if (vaticanVideo) {
+                        vaticanVideo.pause();
+                        vaticanVideo.currentTime = 0; // Reset video
+                        vaticanVideo.style.display = 'none';
+                    }
+                    if (exploitVideo) exploitVideo.style.display = 'block'; // Restore display for other video
+
+
+                    videoOverlay.classList.remove('visible');
+                }
+
+
+                const contentDiv = document.createElement('div'); contentDiv.classList.add('file-content'); currentTypingAreaEl.appendChild(contentDiv);
+                await typeOutput(server.targetFile.content, 5, '', contentDiv);
+                gameState = GAME_STATE.FILE_DOWNLOADED;
+                currentSystem = 'local'; currentDirectory = '/';
+
+                if (inExtendedMissionsPhase) {
+                    extendedTargetIndex++;
+                    completedExtendedTargetsSinceLastPursuit++;
+
+                    if (extendedTargetIndex >= GAME_DATA.extendedTargets.length) {
+                        await typeOutput("<br><span class='color-green'>ALL EXTENDED TARGETS COMPROMISED. PREPARE FOR FINAL EXFILTRATION.</span>", 30);
+                        isFinalPursuitContext = true;
+                        currentTarget = null;
+                        await triggerHackerPursuit();
+                    } else if (completedExtendedTargetsSinceLastPursuit >= 5) {
+                        await typeOutput("<br><span class='color-yellow'>They're on to you again! Increased network surveillance detected!</span>", 30);
+                        completedExtendedTargetsSinceLastPursuit = 0;
+                        isMidPursuitContext = true;
+                        currentTarget = GAME_DATA.extendedTargets[extendedTargetIndex];
+                        await triggerHackerPursuit();
+                    } else {
+                        currentTarget = GAME_DATA.extendedTargets[extendedTargetIndex];
+                        await briefNextExtendedTarget();
+                        gameState = GAME_STATE.IDLE;
+                    }
+                } else {
+                    currentTargetIndex++;
+                    console.log("currentTargetIndex incremented to:", currentTargetIndex);
+                    if (currentTargetIndex < GAME_DATA.targets.length) {
+                         const nextT = GAME_DATA.targets[currentTargetIndex];
+                         currentTarget = nextT;
+                         await typeOutput(`<span class="objective">Objective Complete. Next: Compromise ${nextT.name} (${nextT.ip}). Use: scan ${nextT.ip}</span>`, 30);
+                         gameState = GAME_STATE.IDLE;
+                    } else {
+                        console.log("All primary objectives complete. Triggering pursuit.");
+                        currentTarget = null;
+                        await typeOutput(`<span class="objective">All primary objectives complete! The real challenge begins now...</span>`, 30);
+                        isFirstPursuit = true;
+                        await triggerHackerPursuit();
+                    }
+                }
+            } else { await typeOutput(`Error: Cannot download "${foundFile}". Access restricted or file is not the target.`, 20); playSound('error'); }
+        }
+
+        async function briefNextExtendedTarget() {
+            if (aiTakeoverInProgress && ai_isTyping) return;
+            if (!inExtendedMissionsPhase || extendedTargetIndex >= GAME_DATA.extendedTargets.length) {
+                currentTarget = null;
+                return;
+            }
+
+            const target = GAME_DATA.extendedTargets[extendedTargetIndex];
+            currentTarget = target;
+
+            const briefingArea = document.createElement('div'); briefingArea.classList.add('typing-area');
+            const outputParent = (ai_terminalTextOutput && !aiTakeoverInProgress && !ai_isTyping) ? ai_terminalTextOutput : terminalBodyEl;
+            outputParent.appendChild(briefingArea); // FIXED: Always append
+
+            const oldTypingArea = currentTypingAreaEl; currentTypingAreaEl = briefingArea;
+
+            await typeOutput(`<br><span class="color-purple">--- New High-Value Target Briefing ---</span>`, 20);
+            await typeOutput(`Target Name: <span class="highlight">${target.name}</span>`, 20);
+            await typeOutput(`IP Address: <span class="color-cyan">${target.ip}</span>`, 20);
+            await typeOutput(`Assessed Value: <span class="color-yellow">${target.value_description}</span><br>`, 20);
+            await typeOutput(`<span class="objective">Current Objective: Compromise ${target.name}. Use command: scan ${target.ip}</span>`, 20);
+
+            currentTypingAreaEl = oldTypingArea;
+            gameState = GAME_STATE.IDLE;
+        }
+
+        async function runTraceTick() {
+            console.log("runTraceTick called. gameState:", gameState, "hackerTraceLevel:", hackerTraceLevel);
+            if ((aiTakeoverInProgress && ai_isTyping) || gameState !== GAME_STATE.PURSUIT) { traceTimeoutId = null; console.log("runTraceTick returning early."); return; }
+            let inc = gameDifficulty==='hacker' ? (Math.floor(Math.random()*8)+5) : (Math.floor(Math.random()*5)+2);
+            hackerTraceLevel = Math.min(100, hackerTraceLevel + inc);
+
+            // Update trace display
+            if (traceDisplayEl) {
+                traceDisplayEl.textContent = `TRACE: ${hackerTraceLevel}%`;
+                if (hackerTraceLevel >= 40) { // Start blinking and turn red at 40%
+                    traceDisplayEl.classList.add('trace-warning');
+                } else {
+                    traceDisplayEl.classList.remove('trace-warning');
+                }
+            }
+
+            let msg=null, delay=30, traceMessageForOtherSide = null, playSoundKey = null;
+
+            if (hackerTraceLevel >= 20 && hackerTraceLevel < 25) { msg='<span class="trace-warning">Trace analysis: Source pattern identified. Narrowing...</span>'; playSoundKey = 'traceWarning'; }
+            else if (hackerTraceLevel >= 40 && hackerTraceLevel < 45) { msg='<span class="trace-warning">Triangulation converging. Estimated time to lock: 30s.</span>'; traceMessageForOtherSide = "INTRUSION DETECTED - TRACE LEVEL 40% - NARROWING SOURCE."; playSoundKey = 'traceWarning'; }
+            else if (hackerTraceLevel >= 60 && hackerTraceLevel < 65) { msg='<span class="trace-warning">Packet injection detected! Data stream compromised!</span>'; traceMessageForOtherSide = "<span class='color-red'>SYSTEM ALERT:</span> ACTIVE COUNTER-INTRUSION MEASURES DEPLOYED. SUBJECT PERSISTS."; playSoundKey = 'traceWarning';}
+            else if (hackerTraceLevel >= 75 && hackerTraceLevel < 80 && !traceMessageForOtherSide && (isFirstPursuit || isMidPursuitContext || isFinalPursuitContext)) { traceMessageForOtherSide = "<span class='color-red'>SECURITY DISPATCH:</span> Units converging on suspected origin point. ETA 2 MIKES."; playSoundKey = 'traceWarning';}
+            else if (hackerTraceLevel >= 80 && hackerTraceLevel < 85) { msg='<span class="trace-warning">WARNING: Trace almost complete! Finalizing coordinates...</span>'; playSoundKey = 'traceWarning'; }
+            else if (hackerTraceLevel >= 95 && hackerTraceLevel < 100) { msg='<span class="trace-warning">CRITICAL: TRACE AT '+hackerTraceLevel+'%! ALMOST LOCKED!</span>'; delay=20; traceMessageForOtherSide = "<span class='color-red'>!!!TARGET ACQUIRED!!!</span> DISPATCHING RESPONSE TEAM. CODE RED."; playSoundKey = 'traceWarning';}
+
+            const createTraceMsgArea = () => {
+                const traceArea = document.createElement('div'); traceArea.classList.add('typing-area');
+                const outputParent = (ai_terminalTextOutput && !aiTakeoverInProgress && !ai_isTyping) ? ai_terminalTextOutput : terminalBodyEl;
+                outputParent.appendChild(traceArea); // FIXED: Always append
+                return traceArea;
+            };
+
+            if (msg) {
+                const oldArea = currentTypingAreaEl; currentTypingAreaEl = createTraceMsgArea();
+                if (playSoundKey) playSound(playSoundKey);
+                await typeOutput(msg, delay).finally(() => currentTypingAreaEl = oldArea);
+                if(aiTakeoverInProgress && ai_isTyping) return;
+            }
+            if (traceMessageForOtherSide) {
+                 const oldArea = currentTypingAreaEl; currentTypingAreaEl = createTraceMsgArea();
+                 await typeOutput(traceMessageForOtherSide, 30).finally(() => currentTypingAreaEl = oldArea);
+                 if(aiTakeoverInProgress && ai_isTyping) return;
+            }
+
+            if (hackerTraceLevel >= 100) {
+                playSound('gameOver');
+                initiateAITakeover("CAUGHT_DURING_TRACE");
+            } else traceTimeoutId = setTimeout(runTraceTick, traceTickInterval);
+        }
+
+        async function triggerHackerPursuit() {
+            console.log("triggerHackerPursuit called. gameState before:", gameState);
+            if (aiTakeoverInProgress && ai_isTyping) return;
+            gameState = GAME_STATE.PURSUIT; currentSystem = 'local';
+            console.log("triggerHackerPursuit called. gameState after:", gameState);
+
+            const newTypingArea = document.createElement('div'); newTypingArea.classList.add('typing-area');
+            const outputParent = (ai_terminalTextOutput && !aiTakeoverInProgress && !ai_isTyping) ? ai_terminalTextOutput : terminalBodyEl;
+            outputParent.appendChild(newTypingArea); // FIXED: Always append
+            currentTypingAreaEl = newTypingArea;
+
+            displayPrompt();
+            playSound('traceDetected');
+
+            hackerTraceLevel = 0; traceTickInterval = (gameDifficulty === 'hacker') ? 700 : 1000;
+
+            if (isFinalPursuitContext) {
+                await typeOutput('<span class="trace-warning">FINAL TRACE INITIATED! They are throwing everything they have at you now! Maximum effort required to exfiltrate!</span>', 50);
+            } else if (isFirstPursuit) {
+                await typeOutput('<span class="trace-warning">ALERT: TRACE DETECTED! They know you hit the primary targets!</span>', 50);
+            } else if (isMidPursuitContext) {
+                await typeOutput('<span class="trace-warning">NETWORK ANOMALY! TRACE INBOUND! They\'ve adapted to your deeper incursions!</span>', 50);
+            } else {
+                 await typeOutput('<span class="trace-warning">UNEXPECTED TRACE DETECTED!</span>', 50);
+            }
+            await typeOutput('Commands available: <span class="highlight">change_proxy</span>, <span class="highlight">logout</span>, <span class="highlight">help</span>, <span class="highlight">clear</span>, <span class="highlight">reset</span>', 50);
+            await typeOutput(`<span class="objective">Current Objective: Evade the trace and log out safely!</span>`, 50);
+
+            if (traceTimeoutId) clearTimeout(traceTimeoutId); traceTimeoutId = null;
+            runTraceTick();
+        }
+
+        async function changeProxy() {
+            if ((aiTakeoverInProgress && ai_isTyping) || gameState !== GAME_STATE.PURSUIT) return;
+
+            const newTypingArea = document.createElement('div'); newTypingArea.classList.add('typing-area');
+            const outputParent = (ai_terminalTextOutput && !aiTakeoverInProgress && !ai_isTyping) ? ai_terminalTextOutput : terminalBodyEl;
+            outputParent.appendChild(newTypingArea); // FIXED: Always append
+            currentTypingAreaEl = newTypingArea;
+
+            clearTimeout(traceTimeoutId); traceTimeoutId = null;
+            await typeOutput('Attempting rapid proxy hop...', 20); await new Promise(r=>setTimeout(r,1000));
+            const reduction = Math.floor(Math.random()*30)+15; hackerTraceLevel = Math.max(0, hackerTraceLevel-reduction);
+            await typeOutput(`<span class="color-green">Proxy changed successfully. Trace level reduced by ${reduction}. Current trace: ${hackerTraceLevel}%</span>`, 20);
+            playSound('proxyChange');
+            if(aiTakeoverInProgress && ai_isTyping) return;
+
+            if (isFirstPursuit && hackerTraceLevel < 40) {
+                isFirstPursuit = false;
+                inExtendedMissionsPhase = true;
+                extendedTargetIndex = 0;
+                completedExtendedTargetsSinceLastPursuit = 0;
+
+                await typeOutput("<br><span class='color-green'>Impressive. You slipped their initial net.</span>", 20);
+                await typeOutput("<span class='color-yellow'>But they know you're still out there. The stakes are higher. Your actions have drawn significant attention.</span>", 20);
+                await typeOutput("<span class='color-purple'>New high-value targets identified. This is no longer just about the initial data; this is about sending a message... or digging deeper.</span><br>", 20);
+
+                gameState = GAME_STATE.IDLE;
+                await briefNextExtendedTarget();
+            } else {
+                const tempInc = Math.floor(Math.random()*10)+5; hackerTraceLevel = Math.min(100, hackerTraceLevel+tempInc);
+await typeOutput(`Trace adapting... Temporary increase by ${tempInc}. Current trace: ${hackerTraceLevel}%`, 30);
+                playSound('traceWarning');
+                if(aiTakeoverInProgress && ai_isTyping) return;
+
+                if (hackerTraceLevel >= 100) {
+                    playSound('gameOver');
+                    initiateAITakeover("CAUGHT_DURING_PROXY_HOP");
+                } else {
+                    runTraceTick();
+                }
+            }
+        }
+
+        async function logout() {
+            if ((aiTakeoverInProgress && ai_isTyping) || gameState !== GAME_STATE.PURSUIT) return;
+
+            const newTypingArea = document.createElement('div'); newTypingArea.classList.add('typing-area');
+            const outputParent = (ai_terminalTextOutput && !aiTakeoverInProgress && !ai_isTyping) ? ai_terminalTextOutput : terminalBodyEl;
+            outputParent.appendChild(newTypingArea); // FIXED: Always append
+            currentTypingAreaEl = newTypingArea;
+
+            clearTimeout(traceTimeoutId); traceTimeoutId = null;
+            await typeOutput('Initiating clean logout sequence...', 30); await new Promise(r=>setTimeout(r,1500));
+            const successThreshold = gameDifficulty === 'hacker' ? 70 : 80;
+            if(aiTakeoverInProgress && ai_isTyping) return;
+
+            if (isFinalPursuitContext) {
+                if (hackerTraceLevel < successThreshold) {
+                    gameState = GAME_STATE.WIN; displayPrompt();
+                    playSound('win');
+                    await typeOutput('<br><span class="win-message">>>> ULTIMATE LOGOUT SUCCESSFUL <<<</span><br>', 50);
+                    await typeOutput('<span class="win-message">>>> ALL TARGETS COMPROMISED. TRACE EVADED. YOU ARE A LEGEND. <<<</span>', 50);
+                } else {
+                    playSound('logoutFail');
+                    initiateAITakeover("CAUGHT_FINAL_LOGOUT_FAIL");
+                }
+                isFinalPursuitContext = false; inExtendedMissionsPhase = false; isFirstPursuit = false; isMidPursuitContext = false;
+            } else if (isMidPursuitContext) {
+                if (hackerTraceLevel < successThreshold) {
+                    await typeOutput("<span class='color-green'>Trace temporarily evaded. You bought some time. Back to the shadows...</span>", 20);
+                    playSound('logoutSuccess');
+                    gameState = GAME_STATE.IDLE;
+                    await briefNextExtendedTarget();
+                } else {
+                    playSound('logoutFail');
+                    initiateAITakeover("CAUGHT_MID_LOGOUT_FAIL");
+                    isFirstPursuit = false; inExtendedMissionsPhase = false; isFinalPursuitContext = false;
+                }
+                isMidPursuitContext = false;
+            } else if (isFirstPursuit) {
+                if (hackerTraceLevel < successThreshold) {
+                    gameState = GAME_STATE.WIN; displayPrompt();
+                    playSound('win');
+                    await typeOutput('<br><span class="win-message">>>> LOGOUT SUCCESSFUL - PHASE 1 COMPLETE <<<</span><br>', 50);
+                    await typeOutput("You chose to exfiltrate early after the primary targets. A wise move, perhaps. The shadows remain, and deeper secrets unexplored.", 20);
+                } else {
+                    playSound('logoutFail');
+                    initiateAITakeover("CAUGHT_INITIAL_LOGOUT_FAIL");
+                }
+                isFirstPursuit = false; inExtendedMissionsPhase = false; isMidPursuitContext = false; isFinalPursuitContext = false;
+            } else {
+                await typeOutput("<span class='color-red'>Logout attempted out of defined pursuit context. This is unexpected.</span>", 20);
+                playSound('error');
+                gameState = GAME_STATE.IDLE; // Revert to IDLE if logout is somehow called improperly
+            }
+
+            if (!(aiTakeoverInProgress && ai_isTyping) && (gameState === GAME_STATE.WIN || gameState === GAME_STATE.CAUGHT || gameState === GAME_STATE.GAME_OVER)) {
+                 await typeOutput("<br>Type 'reset' to play again.", 20);
+            }
+        }
+
+        function acquireDynamicDomElements(recreateCommandLine = true) {
+            initialIntroAreaEl = document.getElementById('initial-intro-area');
+            // Command line elements are now consistently grabbed from the static #command-line div
+            commandLineDivEl = document.getElementById('command-line');
+            commandInputEl = document.getElementById('command-input');
+            currentPromptSpanEl = document.getElementById('current-prompt');
+
+            if (!terminalBodyEl) { // terminalBodyEl is set on DOMContentLoaded
+                console.error("acquireDynamicDomElements: terminalBodyEl is null!"); return false;
+            }
+            if (!commandLineDivEl || !commandInputEl || !currentPromptSpanEl) {
+                console.error("acquireDynamicDomElements: Critical command line elements are null!"); return false;
+            }
+            // initialIntroAreaEl might be null if we're not in a full reset, which is fine.
+            return true;
+        }
+
+        async function resetGame() {
+            aiTakeoverInProgress = false;
+            ai_isTyping = false;
+            ai_currentMessageIndex = 0;
+            ai_currentCharIndex = 0;
+            ai_terminalTextOutput = null; // Clear reference to AI's output area
+
+            // Restore original CSS theme
+            const rootStyle = document.documentElement.style;
+            rootStyle.setProperty('--terminal-blue', '#00cfff');
+            rootStyle.setProperty('--terminal-cyan', '#0ff');
+            rootStyle.setProperty('--terminal-purple', '#b19cd9');
+            rootStyle.setProperty('--terminal-green', '#27c93f');
+            rootStyle.setProperty('--terminal-yellow', '#ffbd2e');
+            rootStyle.setProperty('--terminal-glow', 'rgba(0, 191, 255, 0.7)');
+            rootStyle.setProperty('--terminal-red', '#f44'); // Restore original red
+
+            if (terminalHeaderTitleEl) {
+                terminalHeaderTitleEl.textContent = "CYBER TERMINAL // SPEED HACK  //   dev=l0n3r";
+                terminalHeaderTitleEl.setAttribute('data-text', "CYBER TERMINAL // SPEED HACK //  dev=l0n3r");
+                terminalHeaderTitleEl.classList.remove('ai-active');
+                terminalHeaderTitleEl.classList.add('glitch-title-hacker');
+            }
+            if (terminalContainerEl) {
+                terminalContainerEl.style.borderColor = 'var(--terminal-blue)';
+                terminalContainerEl.style.boxShadow = '0 0 40px var(--terminal-glow), inset 0 0 15px rgba(0, 191, 255, 0.3)';
+                terminalContainerEl.classList.remove('ai-takeover-shake');
+                terminalContainerEl.style.animation = 'float 8s ease-in-out infinite';
+            }
+            currentMatrixColor = '--terminal-blue';
+            if (matrixBackgroundEl) matrixBackgroundEl.style.opacity = '0.1';
+
+            stopTimer();
+            if (traceTimeoutId) { clearTimeout(traceTimeoutId); traceTimeoutId = null; }
+
+            gameDifficulty = null; currentTarget = null; currentTargetIndex = 0;
+            currentSystem = 'local'; currentDirectory = '/'; hackerTraceLevel = 0;
+            gameState = GAME_STATE.INTRO;
+            historyEasterEggShown = false; whoamiVariationCounter = 0; konamiCodeEntered = "";
+
+            inExtendedMissionsPhase = false;
+            extendedTargetIndex = 0;
+            completedExtendedTargetsSinceLastPursuit = 0;
+            isFirstPursuit = false;
+            isMidPursuitContext = false;
+            isFinalPursuitContext = false;
+
+            if (!terminalBodyEl) { console.error("resetGame: terminalBodyEl is null!"); return; }
+            // Clear terminal body and set up for initial intro
+            terminalBodyEl.innerHTML = `<div id="initial-intro-area" class="typing-area"></div>`;
+
+            if (!acquireDynamicDomElements(true)) return; // true = expect command line to be there and re-acquire
+            currentTypingAreaEl = initialIntroAreaEl; // Set current typing area to the new intro area
+
+            if (commandInputEl) {
+                commandInputEl.disabled = false;
+                commandInputEl.value = '';
+                commandInputEl.removeEventListener('keydown', handleInputEvt); // Remove old if any
+                commandInputEl.addEventListener('keydown', handleInputEvt);
+            }
+             if (commandLineDivEl) commandLineDivEl.classList.add('hidden'); // Hide initially until ready
+
+            const cursorSpan = document.querySelector('.cursor');
+            if(cursorSpan) cursorSpan.style.display = 'inline-block';
+
+
+            isTyping = true; // Game is "typing" the intro
+            // Don't hide timerDisplayEl here, startTimer will handle hiding for 'noob'
+            if(traceDisplayEl) {
+                traceDisplayEl.classList.remove('hidden'); // Ensure trace is visible
+                traceDisplayEl.textContent = 'TRACE: 0%'; // Initialize trace display
+                traceDisplayEl.classList.remove('trace-warning'); // Remove any lingering warning class
+            }
+
+            playSound('gameStart');
+
+            for (const msg of initialMessages) {
+                // If AI takeover happened and was reset mid-initialMessages (unlikely but possible with dev tools)
+                if (aiTakeoverInProgress && ai_isTyping) return;
+                await typeOutput(msg.text, msg.delay, msg.style);
+                if (msg.sound) playSound(msg.sound);
+            }
+
+            gameState = GAME_STATE.DIFFICULTY_SELECTION;
+            isTyping = false; // Game done with intro, ready for player
+            displayPrompt();
+            if(commandLineDivEl) commandLineDivEl.classList.remove('hidden');
+            if(commandInputEl) commandInputEl.focus();
+            if(terminalBodyEl) terminalBodyEl.scrollTop = terminalBodyEl.scrollHeight;
+            await showDifficultySelection();
+        }
+
+        async function showDifficultySelection() {
+            if(aiTakeoverInProgress && ai_isTyping) return;
+            const da = document.createElement('div'); da.classList.add('typing-area');
+
+            // Append to end of terminal body
+            terminalBodyEl.appendChild(da);
+
+            const oldCurrent = currentTypingAreaEl;
+            currentTypingAreaEl = da;
+            await typeOutput('<span class="color-purple">Choose your skill level:</span>', 30);
+            await typeOutput('- <span class="highlight">noob</span> (No timer, chill mode)', 30);
+            await typeOutput('- <span class="highlight">expert</span> (5 min timer per target)', 30);
+            await typeOutput('- <span class="highlight">hacker</span> (2 min timer per target, faster trace)', 30);
+            currentTypingAreaEl = oldCurrent; // Restore if needed, though likely next input creates new area
+            if(terminalBodyEl) terminalBodyEl.scrollTop = terminalBodyEl.scrollHeight;
+        }
+
+        const konamiSequence = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'];
+        let konamiIndex = 0;
+
+        function handleInputEvt(e) {
+            // Attempt to play background music on first user interaction
+            if (!backgroundMusicStarted && sounds.backgroundMusic) {
+                sounds.backgroundMusic.loop = true;
+                sounds.backgroundMusic.play().catch(e => console.warn("Background music play failed on user interaction:", e));
+                backgroundMusicStarted = true;
+            }
+
+            // If AI is mid-script, it generally disables input, but this is a catch-all
+            if (aiTakeoverInProgress && ai_isTyping) {
+                if (e.key === 'Enter') { // AI might allow Enter to echo for effect
+                    e.preventDefault();
+                    const command = this.value;
+                    if (commandInputEl) commandInputEl.value = '';
+                    // AI could have its own handler here if desired
+                    ai_appendMessageToTerminal(`<br><span style="color:var(--terminal-light-red); font-weight:bold;">></span> <span style="color:var(--terminal-light-red);">${command}</span>`);
+                    ai_appendMessageToTerminal("<br><span style='color: var(--terminal-red);'>> INPUT IGNORED. SYSTEM UNDER MY CONTROL.</span>", {});
+                    playSound('error');
+                }
+                return;
+            }
+            // Konami code check
+            if (e.key.toLowerCase() === konamiSequence[konamiIndex]) {
+                konamiIndex++;
+                if (konamiIndex === konamiSequence.length) {
+                    konamiIndex = 0; e.preventDefault(); if(commandInputEl) commandInputEl.value = '';
+                    playSound('konami');
+
+                    const ka = document.createElement('div'); ka.classList.add('typing-area');
+                    const outputParent = (ai_terminalTextOutput && !aiTakeoverInProgress && !ai_isTyping) ? ai_terminalTextOutput : terminalBodyEl;
+                    outputParent.appendChild(ka); // FIXED: Always append
+
+                    const oldA = currentTypingAreaEl; currentTypingAreaEl = ka;
+                    const wasT = isTyping; isTyping = true;
+                    typeOutput("<span class='color-purple'>*** KONAMI CODE ACCEPTED ***</span>\n<span class='color-yellow'>Cheat codes enabled? Not in this simulation, wise guy! But nice try. +5 Style Points.</span>", 20)
+                    .finally(() => {
+                        currentTypingAreaEl = oldA; isTyping = wasT;
+                        if (!wasT && !(aiTakeoverInProgress && ai_isTyping)) { // If game wasn't typing and AI isn't monologuing
+                             displayPrompt(); if(commandLineDivEl) commandLineDivEl.classList.remove('hidden'); if(commandInputEl) commandInputEl.focus();
+                        }
+                    });
+                    return;
+                }
+            } else {
+                konamiIndex = 0;
+                if (e.key.toLowerCase() === konamiSequence[0]) konamiIndex = 1;
+            }
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                playSound('commandEnter');
+                const command = this.value;
+                const [cmdBase] = command.trim().toLowerCase().split(' ');
+
+                // Critical: If in a state where 'reset' is primary (like post-AI), only allow reset or basic commands.
+                if (gameState === GAME_STATE.GAME_OVER && ai_terminalTextOutput && !aiTakeoverInProgress && !ai_isTyping && cmdBase !== 'reset' && cmdBase !== 'clear' && cmdBase !== 'help') {
+                    handleCommand(command); // Let handleCommand show the "reset required" message
+                    this.value = '';
+                    return;
+                }
+                if (cmdBase === 'reset') { this.value = ''; resetGame(); return; }
+
+                // If game logic is "typing" (e.g., intro, scan, exploit), ignore Enter unless game over state
+                if (isTyping && !(gameState === GAME_STATE.GAME_OVER || gameState === GAME_STATE.CAUGHT || gameState === GAME_STATE.WIN)) {
+                    // Allow Enter to submit commands in game over/win states even if 'isTyping' might be briefly true from a previous message
+                    this.value = '';
+                    return;
+                }
+
+                if (command.trim() !== '') {
+                    handleCommand(command);
+                } else { // Empty command, just show new prompt
+                    const emptyEcho = document.createElement('div'); emptyEcho.classList.add('typing-area');
+                    const outputParent = (ai_terminalTextOutput && !aiTakeoverInProgress && !ai_isTyping) ? ai_terminalTextOutput : terminalBodyEl;
+
+                    if(currentPromptSpanEl) emptyEcho.innerHTML = `<span class="prompt">${currentPromptSpanEl.textContent}</span> <span class="color-blue"></span>`;
+                    outputParent.appendChild(emptyEcho); // FIXED: Always append
+
+                    displayPrompt(); this.value = ''; if(commandInputEl) commandInputEl.focus();
+                    if(terminalBodyEl) terminalBodyEl.scrollTop = terminalBodyEl.scrollHeight;
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            terminalBodyEl = document.getElementById('terminal-body');
+            terminalHeaderTitleEl = document.querySelector('.terminal-header .glitch');
+            terminalContainerEl = document.querySelector('.terminal-container');
+            matrixBackgroundEl = document.getElementById('matrix');
+
+            // Command line elements are static in HTML now, just grab them
+
+            // Play background music on load and loop it
+            if (sounds.backgroundMusic) {
+                sounds.backgroundMusic.loop = true;
+                sounds.backgroundMusic.play().catch(e => console.warn("Background music play failed:", e));
+            }
+
+            commandLineDivEl = document.getElementById('command-line');
+            commandInputEl = document.getElementById('command-input');
+            currentPromptSpanEl = document.getElementById('current-prompt');
+
+            // Timer and Trace displays are now inside terminal-info, grab them
+            timerDisplayEl = document.getElementById('timer-display');
+            traceDisplayEl = document.getElementById('trace-display');
+
+
+            if (!terminalBodyEl || !terminalHeaderTitleEl || !terminalContainerEl || !matrixBackgroundEl || !commandLineDivEl || !commandInputEl || !currentPromptSpanEl || !timerDisplayEl || !traceDisplayEl) {
+                alert("CRITICAL ERROR: Terminal interface failed to load. Please refresh."); return;
+            }
+
+            if (commandInputEl) commandInputEl.addEventListener('keydown', handleInputEvt);
+
+            drawMatrix();
+        });
+
+        window.addEventListener('resize', function() {
+            if(canvas) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                initMatrixRaindrops(); // Reinitialize raindrops for new dimensions
+            }
+        });
+
+        // Focus input when clicking anywhere in the terminal body, if not typing
+        document.addEventListener('DOMContentLoaded', () => {
+            if (terminalContainerEl) { // Listen on container to catch clicks on body or AI output area
+                terminalContainerEl.addEventListener('click', function(e) {
+                    // Check if AI script is running, or if player game is typing
+                    if ((aiTakeoverInProgress && ai_isTyping) || isTyping) return;
+
+                    // Check if the game is in a state where input is expected
+                    const canFocusStates = [
+                        GAME_STATE.DIFFICULTY_SELECTION, GAME_STATE.IDLE,
+                        GAME_STATE.TARGET_FOUND, GAME_STATE.INSIDE_SERVER,
+                        GAME_STATE.FILE_LOCATED, GAME_STATE.FILE_DOWNLOADED,
+                        GAME_STATE.PURSUIT,
+                        GAME_STATE.GAME_OVER, // Includes post-AI state
+                        GAME_STATE.CAUGHT, GAME_STATE.WIN
+                    ];
+
+                    if (commandInputEl && canFocusStates.includes(gameState) && e.target !== commandInputEl) {
+                        commandInputEl.focus();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
