@@ -1,4 +1,3 @@
-# Cyber_Terminal-_Speed_Hack
 # Cyber Terminal // Speed Hack - README
 
 Welcome, Operator Crash_Override, to the Cyber Terminal Simulation!
